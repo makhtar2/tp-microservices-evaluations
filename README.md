@@ -36,6 +36,11 @@ Publication → Réalisation → Soumission → Correction → Résultats
   compensation en cas d'échec.
 - **CQRS + Event Sourcing** : séparation lecture/écriture sur `assessment-service`.
 
+## Documentation
+
+- [Analyse DDD](docs/ddd-analysis.md) — domaine, sous-domaines, Bounded Contexts, Context Map
+- [Architecture](docs/architecture.md) — diagramme, flux, Saga, CQRS/Event Sourcing
+
 ## Démarrage
 
 Structure à compléter au fur et à mesure de l'avancement (voir le board
