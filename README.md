@@ -38,6 +38,7 @@ Publication → Réalisation → Soumission → Correction → Résultats
 
 ## Documentation
 
+- [Cahier de conception](docs/cahier-de-conception.md) — problème, acteurs, règles métier, cas d'utilisation, user stories
 - [Analyse DDD](docs/ddd-analysis.md) — domaine, sous-domaines, Bounded Contexts, Context Map
 - [Architecture](docs/architecture.md) — diagramme, flux, Saga, CQRS/Event Sourcing
 
