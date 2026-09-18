@@ -31,6 +31,7 @@ flowchart TB
     Broker -. consomme .-> SubmissionSvc
     Broker -. consomme .-> GradingSvc
     Broker -. consomme .-> NotificationSvc
+    Broker -. "GradingCompleted / ResultPublished (Read Model)" .-> AssessmentSvc
 ```
 
 - **Traits pleins** : communication synchrone (REST via l'API Gateway, gRPC

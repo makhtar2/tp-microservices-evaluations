@@ -94,5 +94,5 @@ Assessment/Submission/Grading ─(Published Language)──────▶ Notif
 | `AssessmentPublished` | assessment-service | submission-service, notification-service |
 | `SubmissionCompleted` | submission-service | grading-service, notification-service |
 | `AssessmentClosingSoon` | assessment-service | notification-service |
-| `GradingCompleted` | grading-service | notification-service |
-| `ResultPublished` | grading-service | notification-service |
+| `GradingCompleted` | grading-service | notification-service, assessment-service (Read Model) |
+| `ResultPublished` | grading-service | notification-service, assessment-service (Read Model) |
