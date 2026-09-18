@@ -13,4 +13,5 @@
 ## Communication
 - REST (CRUD évaluations, lecture des résultats)
 - gRPC (appel sortant vers question-service pour la génération automatique)
-- Messaging : publie `AssessmentPublished`
+- Messaging : publie `AssessmentPublished` et `AssessmentClosingSoon` ;
+  consomme `GradingCompleted` et `ResultPublished` pour alimenter le Read Model des résultats

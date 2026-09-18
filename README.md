@@ -29,12 +29,20 @@ Publication → Réalisation → Soumission → Correction → Résultats
 
 - **Synchrone** : REST (CRUD) et gRPC (`assessment-service` → `question-service`
   pour la génération automatique d'une évaluation).
-- **Asynchrone** : broker de messages (RabbitMQ/Kafka), événements
+- **Asynchrone** : broker de messages (RabbitMQ), événements
   `AssessmentPublished`, `SubmissionCompleted`, `AssessmentClosingSoon`,
   `GradingCompleted`, `ResultPublished`.
 - **Saga** : coordination Soumission → Correction → Notification, avec
   compensation en cas d'échec.
 - **CQRS + Event Sourcing** : séparation lecture/écriture sur `assessment-service`.
+
+## Stack technique
+
+- Backend : Node.js / Express (un service par dossier)
+- Communication : REST, gRPC (`assessment-service` → `question-service`),
+  RabbitMQ pour les événements
+- Conteneurisation : Docker / Docker Compose
+- Contrats d'API : OpenAPI/Swagger (voir `docs/openapi/`)
 
 ## Documentation
 
