@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Send, Ban } from "lucide-react";
+import { Plus, Send, Ban, ChevronDown } from "lucide-react";
 import { Card, CardHeader } from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
@@ -7,17 +7,22 @@ import StateBlock from "../components/ui/StateBlock";
 import { listAssessments, createAssessment, publishAssessment, cancelAssessment } from "../api/assessments";
 import { STATUS_LABELS, STATUS_TONES } from "../constants/assessment";
 
+const DEFAULT_ENSEIGNANT_ID = "ens-demo";
+
+const NIVEAUX = {
+  FACILE: { label: "Plutôt facile", repartition: { facile: 70, moyen: 25, difficile: 5 } },
+  EQUILIBRE: { label: "Équilibré", repartition: { facile: 30, moyen: 50, difficile: 20 } },
+  DIFFICILE: { label: "Plutôt difficile", repartition: { facile: 10, moyen: 30, difficile: 60 } },
+};
+
 const EMPTY_FORM = {
   titre: "",
-  enseignantId: "ens-demo",
   matiere: "",
   mode: "auto",
+  nombre: 5,
+  niveau: "EQUILIBRE",
   questionIds: "",
   bareme: "",
-  nombre: 5,
-  facile: 30,
-  moyen: 50,
-  difficile: 20,
   themes: "",
   dateDebut: "",
   dateFin: "",
@@ -30,6 +35,7 @@ export default function Assessments() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   function load() {
     listAssessments().then(setAssessments).catch((err) => setError(err.message));
@@ -44,7 +50,7 @@ export default function Assessments() {
     try {
       const payload = {
         titre: form.titre,
-        enseignantId: form.enseignantId,
+        enseignantId: DEFAULT_ENSEIGNANT_ID,
         matiere: form.matiere,
         dateDebut: form.dateDebut || undefined,
         dateFin: form.dateFin || undefined,
@@ -55,11 +61,7 @@ export default function Assessments() {
         payload.generationAuto = {
           matiere: form.matiere,
           nombre: Number(form.nombre),
-          repartitionDifficulte: {
-            facile: Number(form.facile),
-            moyen: Number(form.moyen),
-            difficile: Number(form.difficile),
-          },
+          repartitionDifficulte: NIVEAUX[form.niveau].repartition,
           themes: form.themes
             ? form.themes.split(",").map((t) => t.trim()).filter(Boolean)
             : [],
@@ -74,6 +76,7 @@ export default function Assessments() {
 
       await createAssessment(payload);
       setForm(EMPTY_FORM);
+      setShowAdvanced(false);
       load();
     } catch (err) {
       setError(err.message);
@@ -104,15 +107,13 @@ export default function Assessments() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-[28px] font-extrabold tracking-tight">
-          Gestion des <span className="text-ink-faint">évaluations</span>
-        </h1>
-      </div>
+      <h1 className="text-[28px] font-extrabold tracking-tight">
+        Gestion des <span className="text-ink-faint">évaluations</span>
+      </h1>
 
       {error && <StateBlock title="Erreur" hint={error} />}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-5 items-start">
         <Card>
           <CardHeader title="Nouvelle évaluation" />
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
@@ -121,106 +122,56 @@ export default function Assessments() {
               <input
                 className="field-input"
                 required
+                placeholder="Ex. Partiel de mi-semestre"
                 value={form.titre}
                 onChange={(e) => setForm({ ...form, titre: e.target.value })}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="field-label">Matière</label>
-                <input
-                  className="field-input"
-                  required
-                  value={form.matiere}
-                  onChange={(e) => setForm({ ...form, matiere: e.target.value })}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="field-label">Enseignant</label>
-                <input
-                  className="field-input"
-                  required
-                  value={form.enseignantId}
-                  onChange={(e) => setForm({ ...form, enseignantId: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="segmented">
-              <button
-                type="button"
-                className={`segmented-btn flex-1${form.mode === "auto" ? " segmented-btn-active" : ""}`}
-                onClick={() => setForm({ ...form, mode: "auto" })}
-              >
-                Génération automatique
-              </button>
-              <button
-                type="button"
-                className={`segmented-btn flex-1${form.mode === "manuel" ? " segmented-btn-active" : ""}`}
-                onClick={() => setForm({ ...form, mode: "manuel" })}
-              >
-                Sélection manuelle
-              </button>
+            <div className="flex flex-col gap-1.5">
+              <label className="field-label">Matière</label>
+              <input
+                className="field-input"
+                required
+                placeholder="Ex. Systèmes distribués"
+                value={form.matiere}
+                onChange={(e) => setForm({ ...form, matiere: e.target.value })}
+              />
             </div>
 
             {form.mode === "auto" ? (
               <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="field-label">Nombre de questions</label>
-                    <input
-                      className="field-input"
-                      type="number"
-                      min="1"
-                      value={form.nombre}
-                      onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="field-label">Thèmes (séparés par virgule)</label>
-                    <input
-                      className="field-input"
-                      value={form.themes}
-                      onChange={(e) => setForm({ ...form, themes: e.target.value })}
-                      placeholder="REST, gRPC, Messaging"
-                    />
-                  </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="field-label">Nombre de questions</label>
+                  <input
+                    className="field-input"
+                    type="number"
+                    min="1"
+                    value={form.nombre}
+                    onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                  />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="field-label">% Facile</label>
-                    <input
-                      className="field-input"
-                      type="number"
-                      value={form.facile}
-                      onChange={(e) => setForm({ ...form, facile: e.target.value })}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="field-label">% Moyen</label>
-                    <input
-                      className="field-input"
-                      type="number"
-                      value={form.moyen}
-                      onChange={(e) => setForm({ ...form, moyen: e.target.value })}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="field-label">% Difficile</label>
-                    <input
-                      className="field-input"
-                      type="number"
-                      value={form.difficile}
-                      onChange={(e) => setForm({ ...form, difficile: e.target.value })}
-                    />
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="field-label">Niveau de difficulté</label>
+                  <div className="segmented">
+                    {Object.entries(NIVEAUX).map(([key, { label }]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        className={`segmented-btn${form.niveau === key ? " segmented-btn-active" : ""}`}
+                        onClick={() => setForm({ ...form, niveau: key })}
+                      >
+                        {label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </>
             ) : (
               <>
                 <div className="flex flex-col gap-1.5">
-                  <label className="field-label">IDs des questions (séparés par virgule)</label>
+                  <label className="field-label">Questions à inclure (IDs séparés par virgule)</label>
                   <textarea
                     className="field-textarea"
                     value={form.questionIds}
@@ -239,35 +190,66 @@ export default function Assessments() {
               </>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="field-label">Date de début</label>
-                <input
-                  className="field-input"
-                  type="datetime-local"
-                  value={form.dateDebut}
-                  onChange={(e) => setForm({ ...form, dateDebut: e.target.value })}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="field-label">Date de fin</label>
-                <input
-                  className="field-input"
-                  type="datetime-local"
-                  value={form.dateFin}
-                  onChange={(e) => setForm({ ...form, dateFin: e.target.value })}
-                />
-              </div>
-            </div>
+            <button
+              type="button"
+              className="text-xs font-semibold text-ink-muted hover:text-primary text-left"
+              onClick={() => setForm({ ...form, mode: form.mode === "auto" ? "manuel" : "auto" })}
+            >
+              {form.mode === "auto" ? "Choisir les questions moi-même →" : "← Revenir à la génération automatique"}
+            </button>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="field-label">Consignes</label>
-              <textarea
-                className="field-textarea"
-                value={form.consignes}
-                onChange={(e) => setForm({ ...form, consignes: e.target.value })}
-              />
-            </div>
+            <button
+              type="button"
+              className="flex items-center gap-1.5 text-xs font-semibold text-ink-muted hover:text-primary"
+              onClick={() => setShowAdvanced((v) => !v)}
+            >
+              <ChevronDown size={14} className={`transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+              Options avancées (dates, thèmes, consignes)
+            </button>
+
+            {showAdvanced && (
+              <div className="flex flex-col gap-4 rounded-xl bg-shell p-3.5">
+                {form.mode === "auto" && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="field-label">Thèmes (facultatif, séparés par virgule)</label>
+                    <input
+                      className="field-input"
+                      value={form.themes}
+                      onChange={(e) => setForm({ ...form, themes: e.target.value })}
+                      placeholder="REST, gRPC, Messaging"
+                    />
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="field-label">Date de début</label>
+                    <input
+                      className="field-input"
+                      type="datetime-local"
+                      value={form.dateDebut}
+                      onChange={(e) => setForm({ ...form, dateDebut: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="field-label">Date de fin</label>
+                    <input
+                      className="field-input"
+                      type="datetime-local"
+                      value={form.dateFin}
+                      onChange={(e) => setForm({ ...form, dateFin: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="field-label">Consignes</label>
+                  <textarea
+                    className="field-textarea"
+                    value={form.consignes}
+                    onChange={(e) => setForm({ ...form, consignes: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
 
             <Button type="submit" disabled={submitting}>
               <Plus size={16} />
@@ -292,7 +274,6 @@ export default function Assessments() {
                   <th>Matière</th>
                   <th>Statut</th>
                   <th>Questions</th>
-                  <th>Barème</th>
                   <th />
                 </tr>
               </thead>
@@ -310,7 +291,6 @@ export default function Assessments() {
                       <Badge tone={STATUS_TONES[a.status]}>{STATUS_LABELS[a.status]}</Badge>
                     </td>
                     <td>{a.questionIds?.length ?? 0}</td>
-                    <td>{a.bareme ?? 0}</td>
                     <td>
                       <div className="flex gap-2">
                         {["BROUILLON", "PLANIFIEE"].includes(a.status) && (
@@ -318,12 +298,18 @@ export default function Assessments() {
                             className="icon-action icon-action-positive"
                             onClick={() => handlePublish(a._id)}
                             aria-label="Publier"
+                            title="Publier"
                           >
                             <Send size={15} />
                           </button>
                         )}
                         {["PLANIFIEE", "PUBLIEE"].includes(a.status) && (
-                          <button className="icon-action" onClick={() => handleCancel(a._id)} aria-label="Annuler">
+                          <button
+                            className="icon-action"
+                            onClick={() => handleCancel(a._id)}
+                            aria-label="Annuler"
+                            title="Annuler"
+                          >
                             <Ban size={15} />
                           </button>
                         )}

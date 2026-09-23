@@ -42,21 +42,15 @@ body {
     @apply bg-card rounded-full shadow-card;
   }
 
-  /* Sidebar */
-  .sidebar-icon {
-    @apply flex items-center justify-center w-11 h-11 rounded-full text-ink-muted transition-colors hover:bg-accent-soft hover:text-primary;
+  /* Navigation (sidebar — seul menu de navigation) */
+  .nav-item {
+    @apply flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-sm font-medium text-ink-muted transition-colors hover:bg-accent-soft hover:text-primary;
   }
-  .sidebar-icon-active {
+  .nav-item-active {
     @apply bg-primary text-white hover:bg-primary hover:text-white;
   }
 
   /* Topbar */
-  .topbar-tab {
-    @apply px-[18px] py-2.5 rounded-full text-sm font-medium text-ink-muted whitespace-nowrap transition-colors hover:text-primary;
-  }
-  .topbar-tab-active {
-    @apply bg-card text-primary shadow-card font-semibold;
-  }
   .icon-btn {
     @apply relative flex items-center justify-center w-10 h-10 rounded-full bg-shell text-ink;
   }

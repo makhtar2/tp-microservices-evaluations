@@ -1,16 +1,8 @@
-import { NavLink } from "react-router-dom";
 import { Search, Bell, ChevronDown } from "lucide-react";
-
-const TABS = [
-  { to: "/", label: "Tableau de bord", end: true },
-  { to: "/questions", label: "Questions" },
-  { to: "/evaluations", label: "Évaluations" },
-  { to: "/resultats", label: "Résultats" },
-];
 
 export default function Topbar({ user }) {
   return (
-    <header className="pill-surface flex items-center gap-6 py-2 pl-4 pr-3">
+    <header className="pill-surface flex items-center justify-between gap-6 py-2 pl-4 pr-3">
       <div className="flex items-center gap-2 flex-shrink-0">
         <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
           <circle cx="32" cy="32" r="32" fill="#163832" />
@@ -18,19 +10,6 @@ export default function Topbar({ user }) {
         </svg>
         <span className="font-extrabold text-lg tracking-tight text-primary">Evalio</span>
       </div>
-
-      <nav className="hidden md:flex items-center gap-1 bg-shell rounded-full p-1 flex-1 justify-center">
-        {TABS.map((tab) => (
-          <NavLink
-            key={tab.to}
-            to={tab.to}
-            end={tab.end}
-            className={({ isActive }) => `topbar-tab${isActive ? " topbar-tab-active" : ""}`}
-          >
-            {tab.label}
-          </NavLink>
-        ))}
-      </nav>
 
       <div className="flex items-center gap-2 flex-shrink-0">
         <button type="button" className="icon-btn" aria-label="Rechercher">
