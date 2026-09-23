@@ -1,5 +1,3 @@
-import "./ui.css";
-
 export function Card({ className = "", children, ...props }) {
   return (
     <div className={`card ${className}`} {...props}>
@@ -10,7 +8,7 @@ export function Card({ className = "", children, ...props }) {
 
 export function CardHeader({ title, subtitle, action }) {
   return (
-    <div className="card-header">
+    <div className="flex items-start justify-between gap-3 mb-4">
       <div>
         <div className="card-title">{title}</div>
         {subtitle && <div className="card-subtitle">{subtitle}</div>}

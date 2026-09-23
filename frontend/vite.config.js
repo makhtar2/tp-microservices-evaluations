@@ -1,11 +1,12 @@
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
 // En dev, on route vers les services directement (pas encore d'api-gateway).
 // /api/questions/*    -> question-service   (port 3002)
 // /api/assessments/*  -> assessment-service (port 3003)
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   server: {
     port: 5173,
     proxy: {

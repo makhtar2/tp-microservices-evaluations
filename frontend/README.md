@@ -8,9 +8,17 @@ résultats).
 
 Système de design inspiré d'une référence dashboard fintech (coque
 arrondie, sidebar d'icônes, cartes blanches, vert forêt `#163832` /
-vert accent `#2F9E68`), adapté au domaine métier. Tokens dans
-`src/styles/tokens.css`. Pas de librairie de composants (MUI/AntD…) :
-CSS écrit à la main pour garder un rendu distinctif.
+vert accent `#2F9E68`), adapté au domaine métier. Pas de librairie de
+composants (MUI/AntD…).
+
+**Tailwind CSS v4** (`@tailwindcss/vite`, pas de `tailwind.config.js` —
+config CSS-first). Couleurs/ombres/police de la marque déclarées comme
+tokens dans `src/index.css` (`@theme`), ce qui génère automatiquement
+les utilitaires correspondants (`bg-primary`, `text-ink-muted`,
+`shadow-card`, …). Les motifs répétés (cartes, boutons, badges, champs,
+onglets, icônes) sont factorisés en classes composants dans
+`@layer components` du même fichier, appliquées via `@apply` — le JSX reste lisible sans dupliquer les mêmes
+classes utilitaires partout.
 
 ## Démarrage
 

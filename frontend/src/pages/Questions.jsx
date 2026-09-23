@@ -6,8 +6,6 @@ import Button from "../components/ui/Button";
 import StateBlock from "../components/ui/StateBlock";
 import { listQuestions, createQuestion, deleteQuestion } from "../api/questions";
 import { DIFFICULTY_LABELS, QUESTION_TYPE_LABELS } from "../constants/assessment";
-import "./Dashboard.css";
-import "./Questions.css";
 
 const EMPTY_FORM = {
   statement: "",
@@ -68,19 +66,19 @@ export default function Questions() {
 
   return (
     <>
-      <div className="page-header">
-        <h1 className="page-title">
-          Banque de <span>questions</span>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h1 className="text-[28px] font-extrabold tracking-tight">
+          Banque de <span className="text-ink-faint">questions</span>
         </h1>
       </div>
 
       {error && <StateBlock title="Erreur" hint={error} />}
 
-      <div className="questions-layout">
-        <Card className="questions-form-card">
+      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-5 items-start">
+        <Card>
           <CardHeader title="Nouvelle question" />
-          <form className="question-form" onSubmit={handleSubmit}>
-            <div className="field">
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+            <div className="flex flex-col gap-1.5">
               <label className="field-label">Énoncé</label>
               <textarea
                 className="field-textarea"
@@ -90,8 +88,8 @@ export default function Questions() {
               />
             </div>
 
-            <div className="field-row">
-              <div className="field">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
                 <label className="field-label">Matière</label>
                 <input
                   className="field-input"
@@ -100,7 +98,7 @@ export default function Questions() {
                   onChange={(e) => setForm({ ...form, subject: e.target.value })}
                 />
               </div>
-              <div className="field">
+              <div className="flex flex-col gap-1.5">
                 <label className="field-label">Chapitre</label>
                 <input
                   className="field-input"
@@ -111,10 +109,10 @@ export default function Questions() {
               </div>
             </div>
 
-            <div className="field-row">
-              <div className="field">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1.5">
                 <label className="field-label">Type</label>
-                <select className="field-select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                <select className="field-input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
                   {Object.entries(QUESTION_TYPE_LABELS).map(([value, label]) => (
                     <option key={value} value={value}>
                       {label}
@@ -122,10 +120,10 @@ export default function Questions() {
                   ))}
                 </select>
               </div>
-              <div className="field">
+              <div className="flex flex-col gap-1.5">
                 <label className="field-label">Difficulté</label>
                 <select
-                  className="field-select"
+                  className="field-input"
                   value={form.difficulty}
                   onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
                 >
@@ -136,7 +134,7 @@ export default function Questions() {
                   ))}
                 </select>
               </div>
-              <div className="field">
+              <div className="flex flex-col gap-1.5">
                 <label className="field-label">Points</label>
                 <input
                   className="field-input"
@@ -157,20 +155,20 @@ export default function Questions() {
           </form>
         </Card>
 
-        <Card className="questions-list-card">
+        <Card>
           <CardHeader
             title="Questions"
             subtitle={questions ? `${questions.total} question${questions.total > 1 ? "s" : ""}` : ""}
             action={
-              <div className="questions-filters">
+              <div className="flex gap-2">
                 <input
-                  className="field-input"
+                  className="field-input min-w-[140px]"
                   placeholder="Filtrer par matière"
                   value={filters.subject}
                   onChange={(e) => handleFilterChange("subject", e.target.value)}
                 />
                 <select
-                  className="field-select"
+                  className="field-input min-w-[140px]"
                   value={filters.difficulty}
                   onChange={(e) => handleFilterChange("difficulty", e.target.value)}
                 >
@@ -204,9 +202,11 @@ export default function Questions() {
               <tbody>
                 {questions.items.map((q) => (
                   <tr key={q._id}>
-                    <td className="table-title-cell">
-                      <strong>{q.statement.length > 60 ? `${q.statement.slice(0, 60)}…` : q.statement}</strong>
-                      <span>{q.chapter}</span>
+                    <td>
+                      <strong className="block font-semibold text-[13px]">
+                        {q.statement.length > 60 ? `${q.statement.slice(0, 60)}…` : q.statement}
+                      </strong>
+                      <span className="text-ink-muted text-xs">{q.chapter}</span>
                     </td>
                     <td>{q.subject}</td>
                     <td>{QUESTION_TYPE_LABELS[q.type] ?? q.type}</td>

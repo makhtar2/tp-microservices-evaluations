@@ -1,5 +1,3 @@
-import "./ui.css";
-
 export default function Badge({ tone = "neutral", children }) {
-  return <span className={`badge badge--${tone}`}>{children}</span>;
+  return <span className={`badge badge-${tone}`}>{children}</span>;
 }

@@ -8,7 +8,6 @@ import StateBlock from "../components/ui/StateBlock";
 import { listQuestions } from "../api/questions";
 import { listAssessments } from "../api/assessments";
 import { STATUS_LABELS, STATUS_TONES, PUBLISHED_STATUSES } from "../constants/assessment";
-import "./Dashboard.css";
 
 export default function Dashboard() {
   const [questions, setQuestions] = useState(null);
@@ -54,9 +53,9 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="page-header">
-        <h1 className="page-title">
-          Tableau de bord <span>Enseignant</span>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h1 className="text-[28px] font-extrabold tracking-tight">
+          Tableau de bord <span className="text-ink-faint">Enseignant</span>
         </h1>
       </div>
 
@@ -64,8 +63,8 @@ export default function Dashboard() {
       {loading && <StateBlock title="Chargement…" />}
 
       {!loading && !error && (
-        <div className="dashboard-grid">
-          <div className="dashboard-col">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1.6fr_1.1fr] gap-5 items-stretch">
+          <div className="flex flex-col gap-5">
             <StatCard
               dark
               label="Banque de questions"
@@ -86,11 +85,17 @@ export default function Dashboard() {
               title="Barème par évaluation"
               subtitle="Dernières évaluations créées"
               action={
-                <div className="chart-toggle">
-                  <button className={chartFilter === "toutes" ? "active" : ""} onClick={() => setChartFilter("toutes")}>
+                <div className="segmented">
+                  <button
+                    className={`segmented-btn${chartFilter === "toutes" ? " segmented-btn-active" : ""}`}
+                    onClick={() => setChartFilter("toutes")}
+                  >
                     Toutes
                   </button>
-                  <button className={chartFilter === "publiees" ? "active" : ""} onClick={() => setChartFilter("publiees")}>
+                  <button
+                    className={`segmented-btn${chartFilter === "publiees" ? " segmented-btn-active" : ""}`}
+                    onClick={() => setChartFilter("publiees")}
+                  >
                     Publiées
                   </button>
                 </div>
@@ -101,7 +106,7 @@ export default function Dashboard() {
             ) : (
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={chartData} barSize={28}>
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--color-text-muted)" }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--color-ink-muted)" }} axisLine={false} tickLine={false} />
                   <Tooltip
                     cursor={{ fill: "var(--color-shell)" }}
                     contentStyle={{ borderRadius: 12, border: "1px solid var(--color-border)", fontSize: 12 }}
@@ -116,19 +121,19 @@ export default function Dashboard() {
             )}
           </Card>
 
-          <div className="dashboard-col">
+          <div className="flex flex-col gap-5">
             <StatCard label="Barème moyen" value={stats.avgBareme} sub="par évaluation" icon={<Target size={15} />} />
             <Card>
               <CardHeader title="Dernières évaluations" />
               {recentAssessments.length === 0 ? (
                 <StateBlock title="Rien pour l'instant" />
               ) : (
-                <div className="mini-list">
+                <div className="flex flex-col gap-3">
                   {recentAssessments.slice(0, 3).map((a) => (
-                    <div className="mini-list-item" key={a._id}>
+                    <div className="flex items-center justify-between gap-2 text-[13px]" key={a._id}>
                       <div>
-                        <strong>{a.titre}</strong>
-                        <div className="muted">{a.matiere}</div>
+                        <strong className="block font-semibold text-[13px]">{a.titre}</strong>
+                        <div className="text-ink-muted text-xs">{a.matiere}</div>
                       </div>
                       <Badge tone={STATUS_TONES[a.status]}>{STATUS_LABELS[a.status]}</Badge>
                     </div>
@@ -159,9 +164,11 @@ export default function Dashboard() {
               <tbody>
                 {recentAssessments.map((a) => (
                   <tr key={a._id}>
-                    <td className="table-title-cell">
-                      <strong>{a.titre}</strong>
-                      <span>{a.createdAt ? new Date(a.createdAt).toLocaleDateString("fr-FR") : "—"}</span>
+                    <td>
+                      <strong className="block font-semibold text-[13px]">{a.titre}</strong>
+                      <span className="text-ink-muted text-xs">
+                        {a.createdAt ? new Date(a.createdAt).toLocaleDateString("fr-FR") : "—"}
+                      </span>
                     </td>
                     <td>{a.matiere}</td>
                     <td>
