@@ -26,13 +26,20 @@ Le suivi des tâches se fait sur le board Trello
 ### Groupe 1 — Domaine Questions & Évaluations (CQRS/Event Sourcing)
 Responsables : Makhtar Wade, Mouhamed Mbacke
 
-- `question-service` : CRUD REST de la banque de questions, endpoint gRPC
-  `SelectQuestions` (génération automatique)
-- `assessment-service` : CRUD REST des évaluations, publication de
-  l'événement `AssessmentPublished`, appel gRPC vers `question-service`,
-  séparation Write Model / Read Model, Event Store simplifié,
-  reconstruction d'état à partir des événements, requêtes de lecture
-  (`GET /assessments/:id/results`)
+**Makhtar Wade** — socle CRUD & communication :
+- `question-service` : CRUD REST de la banque de questions (fait)
+- `question-service` : endpoint gRPC `SelectQuestions` côté serveur (fait)
+- `assessment-service` : CRUD REST des évaluations (fait)
+- `assessment-service` : appel gRPC vers `question-service` pour la
+  génération automatique (fait)
+
+**Mouhamed Mbacke** — événements & CQRS/Event Sourcing (s'appuie sur le
+CRUD `assessment-service` ci-dessus) :
+- Publication de l'événement `AssessmentPublished`
+- Séparation Write Model / Read Model sur `assessment-service`
+- Event Store simplifié
+- Reconstruction d'état à partir des événements
+- Requêtes de lecture (`GET /assessments/:id/results`)
 
 ### Groupe 2 — Domaine Utilisateurs, Soumission, Correction & Orchestration
 Responsables : El Hadji Fallou Bousso, Mame Bara Samb, Pape Makhtar Aidara
