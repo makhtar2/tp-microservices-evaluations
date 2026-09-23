@@ -168,6 +168,34 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /assessments/{id}/rebuild:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [assessments]
+      summary: >
+        Reconstruire le Read Model en rejouant l'intégralité de l'Event
+        Store de cette évaluation (opération d'administration / Event
+        Sourcing)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Read Model reconstruit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+        "404":
+          description: Aucun événement pour cette évaluation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /assessments/{id}/results:
     parameters:
       - name: id
@@ -207,7 +235,7 @@ components:
   schemas:
     AssessmentStatus:
       type: string
-      enum: [BROUILLON, PLANIFIEE, PUBLIEE, EN_COURS, TERMINEE, CORRIGEE]
+      enum: [BROUILLON, PLANIFIEE, PUBLIEE, EN_COURS, TERMINEE, CORRIGEE, ANNULEE]
 
     Assessment:
       type: object

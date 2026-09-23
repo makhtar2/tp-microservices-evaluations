@@ -1,61 +1,82 @@
 const { Router } = require("express");
-const store = require("./store");
-const { selectQuestions } = require("./questionClient");
+const commands = require("./commands");
+const queries = require("./queries");
+const { rebuildReadModel } = require("./projectionUpdater");
 
 const router = Router();
 
-router.get("/assessments", (req, res) => {
+function handleCommandError(res, error) {
+  if (error instanceof commands.CommandError) {
+    return res.status(error.status).json({ message: error.message });
+  }
+  console.error(error);
+  return res.status(502).json({ message: `Erreur : ${error.message}` });
+}
+
+router.get("/assessments", async (req, res) => {
   const { enseignantId, status } = req.query;
-  res.json(store.list({ enseignantId, status }));
+  const assessments = await queries.listAssessments({ enseignantId, status });
+  res.json(assessments);
 });
 
 router.post("/assessments", async (req, res) => {
-  const { titre, enseignantId, matiere, questionIds, generationAuto, dateDebut, dateFin, duree, consignes } = req.body;
-  if (!titre || !enseignantId || !matiere) {
-    return res.status(400).json({ message: "titre, enseignantId et matiere sont requis" });
+  try {
+    const assessment = await commands.createAssessment(req.body);
+    res.status(201).json(assessment);
+  } catch (error) {
+    handleCommandError(res, error);
   }
-
-  let selectedQuestionIds = questionIds || [];
-  let fullySatisfied = true;
-  if (generationAuto) {
-    try {
-      const result = await selectQuestions(generationAuto);
-      selectedQuestionIds = result.questions.map((question) => question.id);
-      fullySatisfied = result.fullySatisfied;
-    } catch (error) {
-      return res.status(502).json({ message: `Génération automatique indisponible : ${error.message}` });
-    }
-  }
-
-  const assessment = store.create({
-    titre,
-    enseignantId,
-    matiere,
-    questionIds: selectedQuestionIds,
-    dateDebut,
-    dateFin,
-    duree,
-    consignes,
-  });
-  if (generationAuto && !fullySatisfied) {
-    assessment.avertissement = "Banque de questions insuffisante pour respecter intégralement la répartition demandée";
-  }
-  res.status(201).json(assessment);
 });
 
-router.get("/assessments/:id", (req, res) => {
-  const assessment = store.get(req.params.id);
+router.get("/assessments/:id", async (req, res) => {
+  const assessment = await queries.getAssessment(req.params.id);
   if (!assessment) return res.status(404).json({ message: "Évaluation introuvable" });
   res.json(assessment);
 });
 
-router.put("/assessments/:id", (req, res) => {
-  const updated = store.update(req.params.id, req.body);
-  if (updated === null) return res.status(404).json({ message: "Évaluation introuvable" });
-  if (updated === "INVALID_STATUS") {
-    return res.status(409).json({ message: "Modification impossible dans l'état courant" });
+router.put("/assessments/:id", async (req, res) => {
+  try {
+    const updated = await commands.updateAssessment(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ message: "Évaluation introuvable" });
+    res.json(updated);
+  } catch (error) {
+    handleCommandError(res, error);
   }
-  res.json(updated);
+});
+
+router.post("/assessments/:id/publish", async (req, res) => {
+  try {
+    const published = await commands.publishAssessment(req.params.id);
+    if (!published) return res.status(404).json({ message: "Évaluation introuvable" });
+    res.json(published);
+  } catch (error) {
+    handleCommandError(res, error);
+  }
+});
+
+router.post("/assessments/:id/cancel", async (req, res) => {
+  try {
+    const cancelled = await commands.cancelAssessment(req.params.id);
+    if (!cancelled) return res.status(404).json({ message: "Évaluation introuvable" });
+    res.json(cancelled);
+  } catch (error) {
+    handleCommandError(res, error);
+  }
+});
+
+// Rejoue l'intégralité de l'Event Store d'une évaluation pour
+// re-matérialiser le Read Model (reconstruction d'état, utile après un
+// incident ou pour vérifier que le Read Model est bien dérivable).
+router.post("/assessments/:id/rebuild", async (req, res) => {
+  const state = await rebuildReadModel(req.params.id);
+  if (!state) return res.status(404).json({ message: "Aucun événement pour cette évaluation" });
+  res.json(state);
+});
+
+router.get("/assessments/:id/results", async (req, res) => {
+  const results = await queries.getResults(req.params.id);
+  if (!results) return res.status(404).json({ message: "Évaluation introuvable" });
+  res.json(results);
 });
 
 module.exports = router;
