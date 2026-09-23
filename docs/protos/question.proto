@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package question;
+
+service QuestionService {
+  rpc SelectQuestions (SelectQuestionsRequest) returns (SelectQuestionsResponse);
+}
+
+message SelectQuestionsRequest {
+  string matiere = 1;
+  string difficulte = 2;
+  int32 nombre = 3;
+}
+
+message Question {
+  string id = 1;
+  string enonce = 2;
+  string type = 3;
+  string matiere = 4;
+  string chapitre = 5;
+  string difficulte = 6;
+  double points = 7;
+}
+
+message SelectQuestionsResponse {
+  repeated Question questions = 1;
+}
