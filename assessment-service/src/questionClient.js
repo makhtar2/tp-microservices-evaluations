@@ -21,11 +21,22 @@ const client = new questionProto.QuestionService(
   grpc.credentials.createInsecure()
 );
 
-function selectQuestions({ matiere, difficulte, nombre }) {
+function selectQuestions({ matiere, nombre, repartitionDifficulte, themes }) {
+  const request = {
+    subject: matiere,
+    count: nombre,
+    difficulty: {
+      easyPercent: repartitionDifficulte?.facile ?? 0,
+      mediumPercent: repartitionDifficulte?.moyen ?? 0,
+      hardPercent: repartitionDifficulte?.difficile ?? 0,
+    },
+    themes: themes || [],
+  };
+
   return new Promise((resolve, reject) => {
-    client.selectQuestions({ matiere, difficulte, nombre }, (error, response) => {
+    client.selectQuestions(request, (error, response) => {
       if (error) return reject(error);
-      resolve(response.questions);
+      resolve({ questions: response.questions, fullySatisfied: response.fullySatisfied });
     });
   });
 }

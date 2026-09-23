@@ -2,26 +2,39 @@ syntax = "proto3";
 
 package question;
 
+// Service exposé par question-service, consommé en synchrone par
+// assessment-service pour la génération automatique d'une évaluation (F4).
 service QuestionService {
   rpc SelectQuestions (SelectQuestionsRequest) returns (SelectQuestionsResponse);
 }
 
 message SelectQuestionsRequest {
-  string matiere = 1;
-  string difficulte = 2;
-  int32 nombre = 3;
+  string subject = 1;                          // matière
+  int32 count = 2;                             // nombre total de questions souhaité
+  DifficultyDistribution difficulty = 3;        // répartition en %
+  repeated string themes = 4;                   // chapitres / thèmes acceptés
 }
 
-message Question {
-  string id = 1;
-  string enonce = 2;
-  string type = 3;
-  string matiere = 4;
-  string chapitre = 5;
-  string difficulte = 6;
-  double points = 7;
+message DifficultyDistribution {
+  int32 easy_percent = 1;    // ex: 30
+  int32 medium_percent = 2;  // ex: 50
+  int32 hard_percent = 3;    // ex: 20
 }
 
 message SelectQuestionsResponse {
-  repeated Question questions = 1;
+  repeated QuestionSummary questions = 1;
+  bool fully_satisfied = 2;   // false si pas assez de questions dispo pour respecter les critères
+}
+
+// Volontairement allégé : assessment-service n'a pas besoin des réponses
+// ni de la correction (données propriétaires de question-service, utilisées
+// uniquement côté correction par grading-service via REST).
+message QuestionSummary {
+  string id = 1;
+  string statement = 2;
+  string type = 3;         // QCM | VRAI_FAUX | QUESTION_COURTE | QUESTION_OUVERTE
+  string subject = 4;
+  string chapter = 5;
+  string difficulty = 6;   // FACILE | MOYEN | DIFFICILE
+  int32 points = 7;
 }

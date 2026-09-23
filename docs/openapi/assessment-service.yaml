@@ -264,10 +264,24 @@ components:
           properties:
             matiere:
               type: string
-            difficulte:
-              type: string
             nombre:
               type: integer
+              description: Nombre total de questions souhaité
+            repartitionDifficulte:
+              type: object
+              description: Répartition en pourcentage par niveau de difficulté
+              properties:
+                facile:
+                  type: integer
+                moyen:
+                  type: integer
+                difficile:
+                  type: integer
+            themes:
+              type: array
+              items:
+                type: string
+              description: Chapitres/thèmes acceptés
         dateDebut:
           type: string
           format: date-time

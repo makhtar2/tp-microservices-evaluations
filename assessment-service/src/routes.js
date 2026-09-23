@@ -16,10 +16,12 @@ router.post("/assessments", async (req, res) => {
   }
 
   let selectedQuestionIds = questionIds || [];
+  let fullySatisfied = true;
   if (generationAuto) {
     try {
-      const questions = await selectQuestions(generationAuto);
-      selectedQuestionIds = questions.map((question) => question.id);
+      const result = await selectQuestions(generationAuto);
+      selectedQuestionIds = result.questions.map((question) => question.id);
+      fullySatisfied = result.fullySatisfied;
     } catch (error) {
       return res.status(502).json({ message: `Génération automatique indisponible : ${error.message}` });
     }
@@ -35,6 +37,9 @@ router.post("/assessments", async (req, res) => {
     duree,
     consignes,
   });
+  if (generationAuto && !fullySatisfied) {
+    assessment.avertissement = "Banque de questions insuffisante pour respecter intégralement la répartition demandée";
+  }
   res.status(201).json(assessment);
 });
 
