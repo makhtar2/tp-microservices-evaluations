@@ -3,8 +3,6 @@ import { Card, CardHeader } from "../components/ui/Card";
 import StateBlock from "../components/ui/StateBlock";
 import StatCard from "../components/ui/StatCard";
 import { listAssessments, getResults } from "../api/assessments";
-import "./Dashboard.css";
-import "./Questions.css";
 
 export default function Results() {
   const [assessments, setAssessments] = useState(null);
@@ -26,9 +24,9 @@ export default function Results() {
 
   return (
     <>
-      <div className="page-header">
-        <h1 className="page-title">
-          Consultation des <span>résultats</span>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h1 className="text-[28px] font-extrabold tracking-tight">
+          Consultation des <span className="text-ink-faint">résultats</span>
         </h1>
       </div>
 
@@ -38,7 +36,7 @@ export default function Results() {
         <CardHeader
           title="Choisir une évaluation"
           action={
-            <select className="field-select" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+            <select className="field-input min-w-[220px]" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
               <option value="">— Sélectionner —</option>
               {(assessments ?? []).map((a) => (
                 <option key={a._id} value={a._id}>
@@ -49,13 +47,18 @@ export default function Results() {
           }
         />
 
-        {!selectedId && <StateBlock title="Sélectionnez une évaluation" hint="Les résultats individuels n'apparaissent qu'après publication (result.published)." />}
+        {!selectedId && (
+          <StateBlock
+            title="Sélectionnez une évaluation"
+            hint="Les résultats individuels n'apparaissent qu'après publication (result.published)."
+          />
+        )}
 
         {selectedId && results === null && <StateBlock title="Chargement…" />}
 
         {results && (
           <>
-            <div className="dashboard-grid" style={{ gridTemplateColumns: "1fr 1fr", marginBottom: "var(--space-5)" }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
               <StatCard dark label="Moyenne" value={results.moyenne?.toFixed(2) ?? 0} sub="sur le barème de l'évaluation" />
               <StatCard label="Résultats publiés" value={results.nombreSoumissions ?? 0} sub="étudiants" />
             </div>

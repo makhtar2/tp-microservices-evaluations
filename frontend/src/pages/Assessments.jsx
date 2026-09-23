@@ -6,8 +6,6 @@ import Button from "../components/ui/Button";
 import StateBlock from "../components/ui/StateBlock";
 import { listAssessments, createAssessment, publishAssessment, cancelAssessment } from "../api/assessments";
 import { STATUS_LABELS, STATUS_TONES } from "../constants/assessment";
-import "./Dashboard.css";
-import "./Assessments.css";
 
 const EMPTY_FORM = {
   titre: "",
@@ -106,19 +104,19 @@ export default function Assessments() {
 
   return (
     <>
-      <div className="page-header">
-        <h1 className="page-title">
-          Gestion des <span>évaluations</span>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h1 className="text-[28px] font-extrabold tracking-tight">
+          Gestion des <span className="text-ink-faint">évaluations</span>
         </h1>
       </div>
 
       {error && <StateBlock title="Erreur" hint={error} />}
 
-      <div className="questions-layout">
-        <Card className="questions-form-card">
+      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-5 items-start">
+        <Card>
           <CardHeader title="Nouvelle évaluation" />
-          <form className="question-form" onSubmit={handleSubmit}>
-            <div className="field">
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+            <div className="flex flex-col gap-1.5">
               <label className="field-label">Titre</label>
               <input
                 className="field-input"
@@ -128,8 +126,8 @@ export default function Assessments() {
               />
             </div>
 
-            <div className="field-row">
-              <div className="field">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
                 <label className="field-label">Matière</label>
                 <input
                   className="field-input"
@@ -138,7 +136,7 @@ export default function Assessments() {
                   onChange={(e) => setForm({ ...form, matiere: e.target.value })}
                 />
               </div>
-              <div className="field">
+              <div className="flex flex-col gap-1.5">
                 <label className="field-label">Enseignant</label>
                 <input
                   className="field-input"
@@ -149,17 +147,17 @@ export default function Assessments() {
               </div>
             </div>
 
-            <div className="mode-toggle">
+            <div className="segmented">
               <button
                 type="button"
-                className={form.mode === "auto" ? "active" : ""}
+                className={`segmented-btn flex-1${form.mode === "auto" ? " segmented-btn-active" : ""}`}
                 onClick={() => setForm({ ...form, mode: "auto" })}
               >
                 Génération automatique
               </button>
               <button
                 type="button"
-                className={form.mode === "manuel" ? "active" : ""}
+                className={`segmented-btn flex-1${form.mode === "manuel" ? " segmented-btn-active" : ""}`}
                 onClick={() => setForm({ ...form, mode: "manuel" })}
               >
                 Sélection manuelle
@@ -168,8 +166,8 @@ export default function Assessments() {
 
             {form.mode === "auto" ? (
               <>
-                <div className="field-row">
-                  <div className="field">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
                     <label className="field-label">Nombre de questions</label>
                     <input
                       className="field-input"
@@ -179,7 +177,7 @@ export default function Assessments() {
                       onChange={(e) => setForm({ ...form, nombre: e.target.value })}
                     />
                   </div>
-                  <div className="field">
+                  <div className="flex flex-col gap-1.5">
                     <label className="field-label">Thèmes (séparés par virgule)</label>
                     <input
                       className="field-input"
@@ -189,8 +187,8 @@ export default function Assessments() {
                     />
                   </div>
                 </div>
-                <div className="field-row field-row--3">
-                  <div className="field">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="flex flex-col gap-1.5">
                     <label className="field-label">% Facile</label>
                     <input
                       className="field-input"
@@ -199,7 +197,7 @@ export default function Assessments() {
                       onChange={(e) => setForm({ ...form, facile: e.target.value })}
                     />
                   </div>
-                  <div className="field">
+                  <div className="flex flex-col gap-1.5">
                     <label className="field-label">% Moyen</label>
                     <input
                       className="field-input"
@@ -208,7 +206,7 @@ export default function Assessments() {
                       onChange={(e) => setForm({ ...form, moyen: e.target.value })}
                     />
                   </div>
-                  <div className="field">
+                  <div className="flex flex-col gap-1.5">
                     <label className="field-label">% Difficile</label>
                     <input
                       className="field-input"
@@ -221,7 +219,7 @@ export default function Assessments() {
               </>
             ) : (
               <>
-                <div className="field">
+                <div className="flex flex-col gap-1.5">
                   <label className="field-label">IDs des questions (séparés par virgule)</label>
                   <textarea
                     className="field-textarea"
@@ -229,7 +227,7 @@ export default function Assessments() {
                     onChange={(e) => setForm({ ...form, questionIds: e.target.value })}
                   />
                 </div>
-                <div className="field">
+                <div className="flex flex-col gap-1.5">
                   <label className="field-label">Barème total</label>
                   <input
                     className="field-input"
@@ -241,8 +239,8 @@ export default function Assessments() {
               </>
             )}
 
-            <div className="field-row">
-              <div className="field">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
                 <label className="field-label">Date de début</label>
                 <input
                   className="field-input"
@@ -251,7 +249,7 @@ export default function Assessments() {
                   onChange={(e) => setForm({ ...form, dateDebut: e.target.value })}
                 />
               </div>
-              <div className="field">
+              <div className="flex flex-col gap-1.5">
                 <label className="field-label">Date de fin</label>
                 <input
                   className="field-input"
@@ -262,7 +260,7 @@ export default function Assessments() {
               </div>
             </div>
 
-            <div className="field">
+            <div className="flex flex-col gap-1.5">
               <label className="field-label">Consignes</label>
               <textarea
                 className="field-textarea"
@@ -278,7 +276,7 @@ export default function Assessments() {
           </form>
         </Card>
 
-        <Card className="questions-list-card">
+        <Card>
           <CardHeader title="Évaluations" subtitle={assessments ? `${assessments.length} évaluation(s)` : ""} />
           {actionError && <StateBlock title="Action impossible" hint={actionError} />}
 
@@ -301,9 +299,11 @@ export default function Assessments() {
               <tbody>
                 {assessments.map((a) => (
                   <tr key={a._id}>
-                    <td className="table-title-cell">
-                      <strong>{a.titre}</strong>
-                      <span>{a.createdAt ? new Date(a.createdAt).toLocaleDateString("fr-FR") : "—"}</span>
+                    <td>
+                      <strong className="block font-semibold text-[13px]">{a.titre}</strong>
+                      <span className="text-ink-muted text-xs">
+                        {a.createdAt ? new Date(a.createdAt).toLocaleDateString("fr-FR") : "—"}
+                      </span>
                     </td>
                     <td>{a.matiere}</td>
                     <td>
@@ -311,17 +311,23 @@ export default function Assessments() {
                     </td>
                     <td>{a.questionIds?.length ?? 0}</td>
                     <td>{a.bareme ?? 0}</td>
-                    <td className="row-actions">
-                      {["BROUILLON", "PLANIFIEE"].includes(a.status) && (
-                        <button className="icon-action icon-action--positive" onClick={() => handlePublish(a._id)} aria-label="Publier">
-                          <Send size={15} />
-                        </button>
-                      )}
-                      {["PLANIFIEE", "PUBLIEE"].includes(a.status) && (
-                        <button className="icon-action" onClick={() => handleCancel(a._id)} aria-label="Annuler">
-                          <Ban size={15} />
-                        </button>
-                      )}
+                    <td>
+                      <div className="flex gap-2">
+                        {["BROUILLON", "PLANIFIEE"].includes(a.status) && (
+                          <button
+                            className="icon-action icon-action-positive"
+                            onClick={() => handlePublish(a._id)}
+                            aria-label="Publier"
+                          >
+                            <Send size={15} />
+                          </button>
+                        )}
+                        {["PLANIFIEE", "PUBLIEE"].includes(a.status) && (
+                          <button className="icon-action" onClick={() => handleCancel(a._id)} aria-label="Annuler">
+                            <Ban size={15} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
