@@ -1,0 +1,159 @@
+openapi: 3.0.3
+info:
+  title: Question Service API
+  description: >
+    Gestion de la banque de questions (création, modification, suppression,
+    consultation, recherche et filtrage). Ce service est propriétaire
+    exclusif de ses données (Questions).
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:3001/api
+    description: Local dev
+
+tags:
+  - name: Questions
+
+paths:
+  /questions:
+    get:
+      tags: [Questions]
+      summary: Lister / rechercher / filtrer les questions
+      parameters:
+        - name: subject
+          in: query
+          schema: { type: string }
+          description: Filtrer par matière
+        - name: chapter
+          in: query
+          schema: { type: string }
+          description: Filtrer par chapitre / thème
+        - name: difficulty
+          in: query
+          schema: { $ref: '#/components/schemas/Difficulty' }
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/QuestionType' }
+        - name: search
+          in: query
+          schema: { type: string }
+          description: Recherche texte libre dans l'énoncé
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: Liste paginée de questions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Question' }
+
+    post:
+      tags: [Questions]
+      summary: Créer une question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuestionInput' }
+      responses:
+        "201":
+          description: Question créée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Question' }
+        "400":
+          description: Données invalides
+
+  /questions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+
+    get:
+      tags: [Questions]
+      summary: Consulter une question
+      responses:
+        "200":
+          description: Question trouvée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Question' }
+        "404":
+          description: Question introuvable
+
+    put:
+      tags: [Questions]
+      summary: Modifier une question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuestionInput' }
+      responses:
+        "200":
+          description: Question mise à jour
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Question' }
+        "404":
+          description: Question introuvable
+
+    delete:
+      tags: [Questions]
+      summary: Supprimer une question
+      responses:
+        "204":
+          description: Supprimée
+        "404":
+          description: Question introuvable
+
+components:
+  schemas:
+    QuestionType:
+      type: string
+      enum: [QCM, VRAI_FAUX, QUESTION_COURTE, QUESTION_OUVERTE]
+
+    Difficulty:
+      type: string
+      enum: [FACILE, MOYEN, DIFFICILE]
+
+    QuestionInput:
+      type: object
+      required: [statement, type, subject, chapter, difficulty, points]
+      properties:
+        statement: { type: string }
+        type: { $ref: '#/components/schemas/QuestionType' }
+        subject: { type: string }
+        chapter: { type: string }
+        difficulty: { $ref: '#/components/schemas/Difficulty' }
+        points: { type: number }
+        answers:
+          description: Structure dépendante de `type` (QCM, VRAI_FAUX, QUESTION_COURTE)
+          type: object
+        correction:
+          type: string
+          description: Guideline de correction (utilisé pour QUESTION_OUVERTE)
+        createdBy: { type: string }
+
+    Question:
+      allOf:
+        - type: object
+          properties:
+            id: { type: string }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+        - $ref: '#/components/schemas/QuestionInput'
