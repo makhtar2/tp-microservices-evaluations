@@ -19,6 +19,7 @@ Plateforme permettant aux enseignants de créer et gérer des évaluations
 | grading-service | Correction automatique et manuelle, notes, commentaires | Grades | REST + Messaging |
 | notification-service | Envoi des notifications aux utilisateurs | Notifications | Messaging |
 | api-gateway | Routage, authentification centralisée | - | REST |
+| frontend | Interface web (React) enseignant/étudiant | - | REST (via api-gateway à terme) |
 
 ## Cycle de vie d'une évaluation
 
@@ -39,6 +40,7 @@ Publication → Réalisation → Soumission → Correction → Résultats
 ## Stack technique
 
 - Backend : Node.js / Express (un service par dossier)
+- Frontend : React (Vite), voir `frontend/`
 - Communication : REST, gRPC (`assessment-service` → `question-service`),
   RabbitMQ pour les événements
 - Conteneurisation : Docker / Docker Compose
