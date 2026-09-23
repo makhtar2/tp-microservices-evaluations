@@ -6,10 +6,10 @@ HTTP et modèles de données.
 
 | Fichier | Service | Statut |
 |---|---|---|
-| `user-service.yaml` | user-service | à faire |
-| `question-service.yaml` | question-service | à faire |
-| `assessment-service.yaml` | assessment-service | à faire |
-| `submission-service.yaml` | submission-service | à faire |
-| `grading-service.yaml` | grading-service | à faire |
+| `user-service.yaml` | user-service | fait |
+| `question-service.yaml` | question-service | fait |
+| `assessment-service.yaml` | assessment-service | fait |
+| `submission-service.yaml` | submission-service | fait |
+| `grading-service.yaml` | grading-service | fait |
 
 `notification-service` n'expose pas d'API REST (messaging uniquement).
