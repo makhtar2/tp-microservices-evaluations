@@ -98,7 +98,31 @@ flowchart LR
 - **Read Model** : reconstruit à partir des événements, optimisé pour la
   consultation des résultats par l'enseignant et l'étudiant.
 
+## Convention de messaging (RabbitMQ)
+
+Défini par `assessment-service` (premier producteur/consommateur
+implémenté) ; à réutiliser par les autres services pour rester
+interopérables :
+
+- **Exchange** : `evaluations.events`, type `topic`, durable
+- **Routing keys** (une par événement métier) :
+  - `assessment.published`, `assessment.closing_soon` — publiés par
+    `assessment-service`
+  - `submission.completed` — à publier par `submission-service`
+  - `grading.completed`, `result.published` — à publier par
+    `grading-service`
+- **Payload** : JSON, contient toujours `assessmentId` et, le cas échéant,
+  `etudiantId`
+- Chaque service consommateur déclare sa propre queue durable et la lie
+  aux routing keys qui l'intéressent (ex. `assessment-service` lie
+  `assessment-service.grading-events` à `grading.completed` et
+  `result.published`)
+- Connexion tolérante aux pannes : si le broker est indisponible au
+  démarrage, le service continue de fonctionner en REST (avertissement en
+  log), sans bloquer sur la messagerie
+
 ## Contrats d'API
 
 Voir `docs/openapi/` (à compléter au Sprint 1) pour les spécifications
-OpenAPI/Swagger de chaque service REST.
+OpenAPI/Swagger de chaque service REST. Contrats gRPC dans
+`docs/protos/`.

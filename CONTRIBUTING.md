@@ -11,7 +11,7 @@ Le suivi des tâches se fait sur le board Trello
 | Membre | GitHub | Groupe |
 |---|---|---|
 | Makhtar Wade | [@makhtar2](https://github.com/makhtar2) | Groupe 1 |
-| Mouhamed Mbacke | *à inviter sur le repo* | Groupe 1 |
+| Mouhamed Mbacke | [@mbacke935](https://github.com/mbacke935) | Groupe 1 |
 | El Hadji Fallou Bousso | [@serignefalloubousso99-dot](https://github.com/serignefalloubousso99-dot) | Groupe 2 |
 | Mame Bara Samb | [@bara-samb](https://github.com/bara-samb) | Groupe 2 |
 | Pape Makhtar Aidara | *à confirmer / inviter sur le repo* | Groupe 2 |
@@ -24,7 +24,7 @@ Le suivi des tâches se fait sur le board Trello
 ## Répartition du travail
 
 ### Groupe 1 — Domaine Questions & Évaluations (CQRS/Event Sourcing)
-Responsables : Makhtar Wade, Mouhamed Mbacke
+Responsables : Makhtar Wade, Mouhamed Mbacke — **terminé**
 
 **Makhtar Wade** — socle CRUD & communication :
 - `question-service` : CRUD REST de la banque de questions (fait)
@@ -35,11 +35,19 @@ Responsables : Makhtar Wade, Mouhamed Mbacke
 
 **Mouhamed Mbacke** — événements & CQRS/Event Sourcing (s'appuie sur le
 CRUD `assessment-service` ci-dessus) :
-- Publication de l'événement `AssessmentPublished`
-- Séparation Write Model / Read Model sur `assessment-service`
-- Event Store simplifié
-- Reconstruction d'état à partir des événements
-- Requêtes de lecture (`GET /assessments/:id/results`)
+- Publication de l'événement `assessment.published` (fait)
+- Séparation Write Model / Read Model sur `assessment-service` (fait)
+- Event Store simplifié (fait)
+- Reconstruction d'état à partir des événements (fait,
+  `POST /assessments/:id/rebuild`)
+- Requêtes de lecture (`GET /assessments/:id/results`) (fait)
+
+Mouhamed avait développé en parallèle une première version de
+`question-service` avec persistance MongoDB (PR #1) ; elle a été adoptée
+à la place de la version initiale en mémoire (voir historique Git). Ses
+tâches CQRS/Event Sourcing ci-dessus ont été implémentées et testées
+bout en bout par la suite (création → publication → événement RabbitMQ →
+consommation `result.published` → `GET /results` → reconstruction).
 
 ### Groupe 2 — Domaine Utilisateurs, Soumission, Correction & Orchestration
 Responsables : El Hadji Fallou Bousso, Mame Bara Samb, Pape Makhtar Aidara
