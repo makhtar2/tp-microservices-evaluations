@@ -49,6 +49,25 @@ tâches CQRS/Event Sourcing ci-dessus ont été implémentées et testées
 bout en bout par la suite (création → publication → événement RabbitMQ →
 consommation `result.published` → `GET /results` → reconstruction).
 
+### Frontend — Interface web
+Responsables : Makhtar Wade, Mouhamed Mbacke
+
+Scaffold React (Vite) posé, connecté à `question-service` et
+`assessment-service` via le proxy de dev (voir `frontend/README.md`) :
+Dashboard, Questions (CRUD), Évaluations (création manuelle/auto,
+publication), Résultats. Design system maison (pas de librairie de
+composants), inspiré d'une référence visuelle fournie par l'équipe.
+
+Reste à faire :
+- Brancher la page Login à `user-service` une fois qu'il existe
+  (actuellement un formulaire non fonctionnel)
+- Vue étudiant (réalisation d'une évaluation, dépôt de fichier),
+  dépend de `submission-service`
+- Vrai sélecteur de questions dans le formulaire d'évaluation manuelle
+  (actuellement une liste d'IDs à coller)
+- Brancher sur `api-gateway` une fois qu'il existe, à la place du proxy
+  de dev Vite
+
 ### Groupe 2 — Domaine Utilisateurs, Soumission, Correction & Orchestration
 Responsables : El Hadji Fallou Bousso, Mame Bara Samb, Pape Makhtar Aidara
 
