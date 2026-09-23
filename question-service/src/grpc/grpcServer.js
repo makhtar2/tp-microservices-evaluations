@@ -29,20 +29,22 @@ async function SelectQuestions(call, callback) {
   try {
     const { subject, count, difficulty, themes } = call.request;
 
+    // proto-loader (keepCase:false) convertit les champs snake_case du .proto
+    // en camelCase côté JS : easy_percent -> easyPercent, etc.
     const { questions, fullySatisfied } = await selectQuestions({
       subject,
       count,
       difficulty: {
-        easyPercent: difficulty?.easy_percent,
-        mediumPercent: difficulty?.medium_percent,
-        hardPercent: difficulty?.hard_percent,
+        easyPercent: difficulty?.easyPercent,
+        mediumPercent: difficulty?.mediumPercent,
+        hardPercent: difficulty?.hardPercent,
       },
       themes,
     });
 
     callback(null, {
       questions: questions.map(toQuestionSummary),
-      fully_satisfied: fullySatisfied,
+      fullySatisfied,
     });
   } catch (err) {
     callback(err);

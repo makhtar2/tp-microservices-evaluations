@@ -26,9 +26,9 @@ const request = {
   subject: 'Systèmes distribués',
   count: 5,
   difficulty: {
-    easy_percent: 30,
-    medium_percent: 50,
-    hard_percent: 20,
+    easyPercent: 30,
+    mediumPercent: 50,
+    hardPercent: 20,
   },
   themes: ['Microservices', 'REST', 'gRPC', 'Messaging'],
 };
@@ -38,7 +38,7 @@ client.SelectQuestions(request, (err, response) => {
     console.error('Erreur gRPC :', err.message);
     process.exit(1);
   }
-  console.log(`fully_satisfied: ${response.fully_satisfied}`);
+  console.log(`fullySatisfied: ${response.fullySatisfied}`);
   console.log(`Nombre de questions retournées: ${response.questions.length}`);
   response.questions.forEach((q) => {
     console.log(`  [${q.difficulty}] (${q.chapter}) ${q.statement}`);
