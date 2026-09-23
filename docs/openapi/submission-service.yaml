@@ -1,0 +1,262 @@
+openapi: 3.0.3
+info:
+  title: submission-service API
+  description: >
+    Réalisation d'une évaluation par l'étudiant : saisie des réponses,
+    dépôt de fichiers, soumission horodatée. Consomme l'événement
+    AssessmentPublished (ouverture de l'évaluation) et publie
+    SubmissionCompleted à la soumission.
+  version: 0.1.0
+servers:
+  - url: http://localhost:3004
+    description: Local (accès direct, hors API Gateway)
+
+tags:
+  - name: submissions
+
+paths:
+  /submissions:
+    get:
+      tags: [submissions]
+      summary: Consulter les soumissions (filtrées par évaluation et/ou étudiant)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: assessmentId
+          in: query
+          schema:
+            type: string
+        - name: etudiantId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/SubmissionStatus"
+      responses:
+        "200":
+          description: Liste des soumissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Submission"
+    post:
+      tags: [submissions]
+      summary: >
+        Créer/ouvrir une copie pour un étudiant sur une évaluation publiée
+        et dans sa période active
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assessmentId, etudiantId]
+              properties:
+                assessmentId:
+                  type: string
+                etudiantId:
+                  type: string
+      responses:
+        "201":
+          description: Copie créée (statut EN_COURS)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+        "409":
+          description: Évaluation non publiée, hors période, ou copie déjà existante
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /submissions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [submissions]
+      summary: Consulter le statut et le contenu d'une soumission
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Soumission trouvée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+        "404":
+          description: Soumission introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /submissions/{id}/answers:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      tags: [submissions]
+      summary: Enregistrer/mettre à jour les réponses au fur et à mesure (auto-save)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reponses:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Reponse"
+      responses:
+        "200":
+          description: Réponses enregistrées
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+        "409":
+          description: La copie n'est plus modifiable (déjà soumise ou hors délai)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /submissions/{id}/files:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [submissions]
+      summary: Déposer un fichier (devoir)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Fichier déposé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FichierDepose"
+        "409":
+          description: Date limite dépassée (refus automatique)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /submissions/{id}/submit:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [submissions]
+      summary: >
+        Soumettre définitivement la copie (horodatage, statut → SOUMISE,
+        publie SubmissionCompleted). Refusé si la date de fin de
+        l'évaluation est dépassée.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Soumission finalisée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+        "409":
+          description: Soumission hors délai ou déjà finalisée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SubmissionStatus:
+      type: string
+      enum: [EN_COURS, SOUMISE, REFUSEE_HORS_DELAI, ANNULEE]
+
+    Reponse:
+      type: object
+      properties:
+        questionId:
+          type: string
+        reponse:
+          type: string
+
+    FichierDepose:
+      type: object
+      properties:
+        id:
+          type: string
+        nomFichier:
+          type: string
+        url:
+          type: string
+        deposedAt:
+          type: string
+          format: date-time
+
+    Submission:
+      type: object
+      properties:
+        id:
+          type: string
+        assessmentId:
+          type: string
+        etudiantId:
+          type: string
+        reponses:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reponse"
+        fichiers:
+          type: array
+          items:
+            $ref: "#/components/schemas/FichierDepose"
+        status:
+          $ref: "#/components/schemas/SubmissionStatus"
+        soumiseAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string

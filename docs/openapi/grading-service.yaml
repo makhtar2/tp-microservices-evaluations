@@ -1,0 +1,196 @@
+openapi: 3.0.3
+info:
+  title: grading-service API
+  description: >
+    Correction automatique (QCM, Vrai/Faux, réponse courte) déclenchée par
+    l'événement SubmissionCompleted, et correction manuelle (questions
+    ouvertes, devoirs) par l'enseignant. Publie GradingCompleted puis
+    ResultPublished quand l'ensemble de la copie est corrigé.
+  version: 0.1.0
+servers:
+  - url: http://localhost:3005
+    description: Local (accès direct, hors API Gateway)
+
+tags:
+  - name: gradings
+
+paths:
+  /gradings/{submissionId}:
+    parameters:
+      - name: submissionId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [gradings]
+      summary: Consulter la copie corrigée/à corriger (réponses, notes par question, statut)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Correction trouvée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Grading"
+        "404":
+          description: Correction introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /gradings/pending:
+    get:
+      tags: [gradings]
+      summary: >
+        Lister les copies contenant des questions ouvertes/devoirs en
+        attente de correction manuelle
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: assessmentId
+          in: query
+          schema:
+            type: string
+        - name: enseignantId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Liste des copies en attente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Grading"
+
+  /gradings/{submissionId}/questions/{questionId}:
+    parameters:
+      - name: submissionId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: questionId
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      tags: [gradings]
+      summary: >
+        Attribuer une note et un commentaire à une question ouverte ou un
+        devoir (Enseignant responsable de l'évaluation uniquement)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note:
+                  type: number
+                commentaire:
+                  type: string
+      responses:
+        "200":
+          description: Note enregistrée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Grading"
+        "403":
+          description: L'enseignant n'est pas habilité à corriger cette copie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Correction ou question introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /gradings/{submissionId}/validate:
+    parameters:
+      - name: submissionId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [gradings]
+      summary: >
+        Valider la correction de la copie (émet GradingCompleted, puis
+        ResultPublished lorsque toutes les questions sont notées)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Correction validée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Grading"
+        "409":
+          description: Toutes les questions ne sont pas encore notées
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    GradingStatus:
+      type: string
+      enum: [EN_ATTENTE, CORRECTION_AUTO_PARTIELLE, EN_CORRECTION_MANUELLE, VALIDEE]
+
+    QuestionNote:
+      type: object
+      properties:
+        questionId:
+          type: string
+        note:
+          type: number
+        commentaire:
+          type: string
+        correctionAutomatique:
+          type: boolean
+
+    Grading:
+      type: object
+      properties:
+        submissionId:
+          type: string
+        assessmentId:
+          type: string
+        etudiantId:
+          type: string
+        notes:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuestionNote"
+        scoreTotal:
+          type: number
+        status:
+          $ref: "#/components/schemas/GradingStatus"
+        validatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string

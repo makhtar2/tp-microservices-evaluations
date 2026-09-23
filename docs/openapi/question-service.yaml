@@ -1,0 +1,214 @@
+openapi: 3.0.3
+info:
+  title: question-service API
+  description: >
+    Banque de questions : CRUD, recherche/filtre, sélection de questions
+    pour la génération automatique d'une évaluation.
+  version: 0.1.0
+servers:
+  - url: http://localhost:3002
+    description: Local (accès direct, hors API Gateway)
+
+tags:
+  - name: questions
+
+paths:
+  /questions:
+    get:
+      tags: [questions]
+      summary: Lister/rechercher les questions
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: matiere
+          in: query
+          schema:
+            type: string
+        - name: chapitre
+          in: query
+          schema:
+            type: string
+        - name: difficulte
+          in: query
+          schema:
+            $ref: "#/components/schemas/Difficulte"
+        - name: type
+          in: query
+          schema:
+            $ref: "#/components/schemas/TypeQuestion"
+        - name: q
+          in: query
+          description: Recherche texte libre sur l'énoncé
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Liste des questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Question"
+    post:
+      tags: [questions]
+      summary: Créer une question (Enseignant)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionCreate"
+      responses:
+        "201":
+          description: Question créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+        "400":
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /questions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [questions]
+      summary: Consulter une question
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Question trouvée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+        "404":
+          description: Question introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      tags: [questions]
+      summary: Modifier une question (Enseignant)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionCreate"
+      responses:
+        "200":
+          description: Question mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+        "404":
+          description: Question introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [questions]
+      summary: >
+        Retirer une question de la banque active (les évaluations passées
+        qui l'utilisent la conservent, pas de suppression en cascade)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Question retirée
+        "404":
+          description: Question introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TypeQuestion:
+      type: string
+      enum: [QCM, VRAI_FAUX, REPONSE_COURTE, QUESTION_OUVERTE]
+
+    Difficulte:
+      type: string
+      enum: [FACILE, MOYEN, DIFFICILE]
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+        enonce:
+          type: string
+        type:
+          $ref: "#/components/schemas/TypeQuestion"
+        matiere:
+          type: string
+        chapitre:
+          type: string
+        difficulte:
+          $ref: "#/components/schemas/Difficulte"
+        points:
+          type: number
+        reponses:
+          type: array
+          items:
+            type: string
+          description: Propositions de réponse (QCM/Vrai-Faux)
+        correction:
+          type: string
+          description: Réponse(s) attendue(s) et/ou barème de correction
+        active:
+          type: boolean
+          default: true
+        createdAt:
+          type: string
+          format: date-time
+
+    QuestionCreate:
+      type: object
+      required: [enonce, type, matiere, difficulte, points]
+      properties:
+        enonce:
+          type: string
+        type:
+          $ref: "#/components/schemas/TypeQuestion"
+        matiere:
+          type: string
+        chapitre:
+          type: string
+        difficulte:
+          $ref: "#/components/schemas/Difficulte"
+        points:
+          type: number
+        reponses:
+          type: array
+          items:
+            type: string
+        correction:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string

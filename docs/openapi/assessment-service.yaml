@@ -1,0 +1,316 @@
+openapi: 3.0.3
+info:
+  title: assessment-service API
+  description: >
+    Création, planification, publication des évaluations et consultation
+    des résultats (Read Model, alimenté par les événements
+    GradingCompleted / ResultPublished — voir docs/architecture.md).
+  version: 0.1.0
+servers:
+  - url: http://localhost:3003
+    description: Local (accès direct, hors API Gateway)
+
+tags:
+  - name: assessments
+  - name: results
+
+paths:
+  /assessments:
+    get:
+      tags: [assessments]
+      summary: Lister les évaluations
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: enseignantId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/AssessmentStatus"
+      responses:
+        "200":
+          description: Liste des évaluations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Assessment"
+    post:
+      tags: [assessments]
+      summary: >
+        Créer une évaluation en BROUILLON (sélection manuelle de questions,
+        ou génération automatique via gRPC SelectQuestions sur
+        question-service)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssessmentCreate"
+      responses:
+        "201":
+          description: Évaluation créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+        "400":
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /assessments/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [assessments]
+      summary: Consulter une évaluation
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Évaluation trouvée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+        "404":
+          description: Évaluation introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      tags: [assessments]
+      summary: Modifier une évaluation (uniquement à l'état BROUILLON ou PLANIFIÉE)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssessmentCreate"
+      responses:
+        "200":
+          description: Évaluation mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+        "409":
+          description: Modification impossible dans l'état courant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /assessments/{id}/publish:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [assessments]
+      summary: >
+        Publier l'évaluation (état → PUBLIÉE, émet l'événement
+        AssessmentPublished). Refusé si aucune question ou barème total à 0
+        (règle métier).
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Évaluation publiée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+        "409":
+          description: >
+            Publication refusée (pas de question, barème total à 0, ou
+            état incompatible)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /assessments/{id}/cancel:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [assessments]
+      summary: Annuler une évaluation planifiée ou publiée
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Évaluation annulée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+        "409":
+          description: Annulation impossible dans l'état courant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /assessments/{id}/results:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [results]
+      summary: >
+        Consulter les résultats d'une évaluation à partir du Read Model
+        (moyenne, répartition des notes, nombre de soumissions ; résultat
+        individuel visible pour un étudiant uniquement après
+        ResultPublished)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Résultats de l'évaluation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssessmentResults"
+        "404":
+          description: Évaluation introuvable ou résultats non publiés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AssessmentStatus:
+      type: string
+      enum: [BROUILLON, PLANIFIEE, PUBLIEE, EN_COURS, TERMINEE, CORRIGEE]
+
+    Assessment:
+      type: object
+      properties:
+        id:
+          type: string
+        titre:
+          type: string
+        enseignantId:
+          type: string
+        matiere:
+          type: string
+        questionIds:
+          type: array
+          items:
+            type: string
+        bareme:
+          type: number
+        dateDebut:
+          type: string
+          format: date-time
+        dateFin:
+          type: string
+          format: date-time
+        duree:
+          type: integer
+          description: Durée en minutes
+        consignes:
+          type: string
+        status:
+          $ref: "#/components/schemas/AssessmentStatus"
+        createdAt:
+          type: string
+          format: date-time
+
+    AssessmentCreate:
+      type: object
+      required: [titre, enseignantId, matiere]
+      properties:
+        titre:
+          type: string
+        enseignantId:
+          type: string
+        matiere:
+          type: string
+        questionIds:
+          type: array
+          items:
+            type: string
+          description: Sélection manuelle des questions
+        generationAuto:
+          type: object
+          description: Critères de génération automatique (gRPC SelectQuestions)
+          properties:
+            matiere:
+              type: string
+            difficulte:
+              type: string
+            nombre:
+              type: integer
+        dateDebut:
+          type: string
+          format: date-time
+        dateFin:
+          type: string
+          format: date-time
+        duree:
+          type: integer
+        consignes:
+          type: string
+
+    AssessmentResults:
+      type: object
+      properties:
+        assessmentId:
+          type: string
+        moyenne:
+          type: number
+        nombreSoumissions:
+          type: integer
+        repartitionNotes:
+          type: array
+          items:
+            type: object
+            properties:
+              tranche:
+                type: string
+              effectif:
+                type: integer
+        resultatsEtudiants:
+          type: array
+          items:
+            type: object
+            properties:
+              etudiantId:
+                type: string
+              note:
+                type: number
+              commentaire:
+                type: string
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
