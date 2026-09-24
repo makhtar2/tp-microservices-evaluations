@@ -99,9 +99,11 @@ Responsables : El Hadji Fallou Bousso, Mame Bara Samb, Pape Makhtar Aidara
   `<type>/<service>-<courte-description>` (ex. `feat/question-crud-api`).
 - **Commits** : suivre le style déjà utilisé sur `main`
   (`feat:`, `fix:`, `docs:`, `chore:`, `test:`) suivi d'un résumé concis.
-- **Pull Requests** : une PR par tâche, review par au moins un membre de
-  l'autre groupe avant de merger sur `main`, description liée à la carte
-  Trello correspondante.
+- **Pull Requests** : une PR par tâche, description liée à la carte
+  Trello correspondante. Chaque groupe fusionne lui-même les PR de son
+  périmètre sur `main` (rebase), sans attendre de review de l'autre
+  groupe ; une review reste bienvenue, notamment quand une PR modifie le
+  code ou les événements d'un service de l'autre groupe.
 - **Contrats d'API** : toute modification d'un endpoint REST doit être
   répercutée dans le fichier OpenAPI correspondant (`docs/openapi/`).
 - **Événements** : tout changement de schéma d'événement (nom, payload)
