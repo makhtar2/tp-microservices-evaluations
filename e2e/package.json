@@ -1,0 +1,13 @@
+{
+  "name": "e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tests bout-en-bout de la plateforme d'évaluations (parcours complet et scénarios d'échec)",
+  "scripts": {
+    "test": "node --test-reporter=spec index.js",
+    "install:services": "node scripts/install-services.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -71,3 +71,13 @@ docker compose up -d rabbitmq
 
 Chaque service se lance ensuite avec `npm install && npm start` dans son
 dossier (MongoDB local requis, voir le `.env.example` du service).
+
+## Tests bout-en-bout
+
+Parcours complet et scénarios d'échec (dépôt hors délai, correction
+manquante), sur une infrastructure Docker jetable : voir
+[e2e/README.md](e2e/README.md).
+
+```bash
+cd e2e && npm run install:services && npm test
+```
