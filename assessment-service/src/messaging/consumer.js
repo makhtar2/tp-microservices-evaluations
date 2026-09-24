@@ -14,6 +14,10 @@ async function startConsumer() {
   try {
     const channel = await getChannel();
     await channel.assertQueue(QUEUE, { durable: true });
+    // Un message à la fois : recordEvent lit puis réécrit le Read Model ;
+    // traités en parallèle, GradingCompleted et ResultPublished d'une même
+    // copie s'écrasaient (le résultat publié disparaissait du Read Model).
+    await channel.prefetch(1);
     for (const routingKey of ROUTING_KEYS) {
       await channel.bindQueue(QUEUE, EXCHANGE, routingKey);
     }
