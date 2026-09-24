@@ -1,0 +1,20 @@
+# Infrastructure partagée pour le développement local.
+# Les services Node se lancent pour l'instant hors Docker (npm start),
+# ils seront ajoutés ici avec la carte « Conteneuriser les services ».
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: evaluations-rabbitmq
+    ports:
+      - "5672:5672"   # AMQP (RABBITMQ_URL=amqp://localhost:5672)
+      - "15672:15672" # Interface d'admin http://localhost:15672 (guest / guest)
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  rabbitmq-data:
