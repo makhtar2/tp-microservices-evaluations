@@ -1,0 +1,29 @@
+# Infrastructure jetable pour les tests bout-en-bout : MongoDB et RabbitMQ
+# sur des ports dédiés, sans volume, pour ne jamais toucher aux données de
+# développement. Démarrée et détruite par `npm test` (voir lib/stack.js).
+name: tp-evaluations-e2e
+
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - "${E2E_MONGO_PORT:-27018}:27017"
+    tmpfs:
+      - /data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "${E2E_RABBITMQ_PORT:-5673}:5672"
+    healthcheck:
+      # Test TCP du port AMQP : `rabbitmq-diagnostics` lancé en root dès le
+      # démarrage crée le cookie Erlang avant le serveur, qui plante (eacces).
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 5672"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
