@@ -54,5 +54,20 @@ Publication → Réalisation → Soumission → Correction → Résultats
 
 ## Démarrage
 
-Structure à compléter au fur et à mesure de l'avancement (voir le board
-de suivi du projet).
+### Message broker (RabbitMQ)
+
+```bash
+docker compose up -d rabbitmq
+```
+
+- AMQP : `amqp://localhost:5672` (valeur par défaut de `RABBITMQ_URL` dans
+  chaque service)
+- Interface d'admin : http://localhost:15672 (guest / guest) — permet de
+  voir l'exchange `evaluations.events`, les queues de chaque service et
+  les messages qui transitent
+- L'exchange et les queues sont déclarés par les services eux-mêmes au
+  démarrage (voir « Convention de messaging » dans
+  [docs/architecture.md](docs/architecture.md))
+
+Chaque service se lance ensuite avec `npm install && npm start` dans son
+dossier (MongoDB local requis, voir le `.env.example` du service).
