@@ -1,20 +1,291 @@
-# Infrastructure partagée pour le développement local.
-# Les services Node se lancent pour l'instant hors Docker (npm start),
-# ils seront ajoutés ici avec la carte « Conteneuriser les services ».
+name: tp-microservices-evaluations
+
 services:
+  # =========================================================================
+  # 1. Message Broker (RabbitMQ)
+  # =========================================================================
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: evaluations-rabbitmq
     ports:
-      - "5672:5672"   # AMQP (RABBITMQ_URL=amqp://localhost:5672)
-      - "15672:15672" # Interface d'admin http://localhost:15672 (guest / guest)
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Interface d'administration web (guest / guest)
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 5672"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 20
+    networks:
+      - evaluations-net
 
+  # =========================================================================
+  # 2. Bases de données dédiées par microservice (Pattern Database-per-Service)
+  # =========================================================================
+  user-db:
+    image: mongo:7
+    container_name: evaluations-user-db
+    volumes:
+      - user-db-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - evaluations-net
+
+  question-db:
+    image: mongo:7
+    container_name: evaluations-question-db
+    volumes:
+      - question-db-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - evaluations-net
+
+  assessment-db:
+    image: mongo:7
+    container_name: evaluations-assessment-db
+    volumes:
+      - assessment-db-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - evaluations-net
+
+  submission-db:
+    image: mongo:7
+    container_name: evaluations-submission-db
+    volumes:
+      - submission-db-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - evaluations-net
+
+  grading-db:
+    image: mongo:7
+    container_name: evaluations-grading-db
+    volumes:
+      - grading-db-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - evaluations-net
+
+  notification-db:
+    image: mongo:7
+    container_name: evaluations-notification-db
+    volumes:
+      - notification-db-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - evaluations-net
+
+  # =========================================================================
+  # 3. Microservices Métier
+  # =========================================================================
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: evaluations-user-service
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - MONGO_URI=mongodb://user-db:27017/user_service
+      - JWT_SECRET=change-me-en-dev
+      - JWT_EXPIRES_IN=8h
+    depends_on:
+      user-db:
+        condition: service_healthy
+    networks:
+      - evaluations-net
+
+  question-service:
+    build:
+      context: ./question-service
+      dockerfile: Dockerfile
+    container_name: evaluations-question-service
+    ports:
+      - "3002:3002"
+      - "50052:50052"
+    environment:
+      - PORT=3002
+      - GRPC_PORT=50052
+      - MONGO_URI=mongodb://question-db:27017/question_service
+      - PROTO_PATH=/docs/protos/question.proto
+    volumes:
+      - ./docs/protos:/docs/protos:ro
+    depends_on:
+      question-db:
+        condition: service_healthy
+    networks:
+      - evaluations-net
+
+  assessment-service:
+    build:
+      context: ./assessment-service
+      dockerfile: Dockerfile
+    container_name: evaluations-assessment-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - MONGO_URI=mongodb://assessment-db:27017/assessment_service
+      - QUESTION_SERVICE_GRPC_URL=question-service:50052
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - PROTO_PATH=/docs/protos/question.proto
+    volumes:
+      - ./docs/protos:/docs/protos:ro
+    depends_on:
+      assessment-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      question-service:
+        condition: service_started
+    networks:
+      - evaluations-net
+
+  submission-service:
+    build:
+      context: ./submission-service
+      dockerfile: Dockerfile
+    container_name: evaluations-submission-service
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - MONGO_URI=mongodb://submission-db:27017/submission_service
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - UPLOAD_DIR=uploads
+    volumes:
+      - submission-uploads:/app/uploads
+    depends_on:
+      submission-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - evaluations-net
+
+  grading-service:
+    build:
+      context: ./grading-service
+      dockerfile: Dockerfile
+    container_name: evaluations-grading-service
+    ports:
+      - "3005:3005"
+    environment:
+      - PORT=3005
+      - MONGO_URI=mongodb://grading-db:27017/grading_service
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - ASSESSMENT_SERVICE_URL=http://assessment-service:3003
+      - QUESTION_SERVICE_URL=http://question-service:3002
+    depends_on:
+      grading-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      assessment-service:
+        condition: service_started
+      question-service:
+        condition: service_started
+    networks:
+      - evaluations-net
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: evaluations-notification-service
+    environment:
+      - MONGO_URI=mongodb://notification-db:27017/notification_service
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+    depends_on:
+      notification-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - evaluations-net
+
+  # =========================================================================
+  # 4. API Gateway (Passerelle centralisée)
+  # =========================================================================
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: evaluations-api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - JWT_SECRET=change-me-en-dev
+      - USER_SERVICE_URL=http://user-service:3001
+      - QUESTION_SERVICE_URL=http://question-service:3002
+      - ASSESSMENT_SERVICE_URL=http://assessment-service:3003
+      - SUBMISSION_SERVICE_URL=http://submission-service:3004
+      - GRADING_SERVICE_URL=http://grading-service:3005
+    depends_on:
+      - user-service
+      - question-service
+      - assessment-service
+      - submission-service
+      - grading-service
+    networks:
+      - evaluations-net
+
+  # =========================================================================
+  # 5. Frontend Client Web
+  # =========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: evaluations-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api-gateway
+    networks:
+      - evaluations-net
+
+# =========================================================================
+# Volumes persistants et Réseau
+# =========================================================================
 volumes:
   rabbitmq-data:
+  user-db-data:
+  question-db-data:
+  assessment-db-data:
+  submission-db-data:
+  grading-db-data:
+  notification-db-data:
+  submission-uploads:
+
+networks:
+  evaluations-net:
+    driver: bridge
