@@ -1,83 +1,224 @@
-# Plateforme distribuée de gestion des évaluations
+# Plateforme Distribuée de Gestion des Évaluations
 
-Projet de classe - Systèmes distribués (architecture microservices).
+> **Projet d'Architecture Distribuée & Microservices (L3)**  
+> **Responsable de la documentation technique** : Pape Makhtar Aidara
 
-## Domaine métier
+Plateforme complète permettant aux enseignants de créer et gérer des évaluations (banque de questions, planification, publication, correction automatique et manuelle) et aux étudiants de réaliser et soumettre leurs travaux en ligne.
 
-Plateforme permettant aux enseignants de créer et gérer des évaluations
-(banque de questions, planification, publication, correction) et aux
-étudiants de les réaliser et de soumettre leurs réponses.
+---
 
-## Services
+## 1. Vue d'Ensemble des Services
 
-| Service | Responsabilité | Données | Communication |
+L'architecture repose sur 7 microservices backend, une passerelle d'accès (API Gateway), une application frontend et une infrastructure de messagerie asynchrone (RabbitMQ). Chaque service possède sa propre base de données MongoDB isolée.
+
+| Service | Port(s) | Responsabilité | Stockage / DB | Communication |
+|---|---|---|---|---|
+| [`api-gateway`](api-gateway/README.md) | **3000** | Point d'entrée unique, reverse proxy, validation JWT et contrôle d'accès RBAC | Sans état (Stateless) | REST entrant / sortant |
+| [`user-service`](user-service/README.md) | **3001** | Gestion des utilisateurs, profils et authentification par token JWT | MongoDB (`user_service`) | REST |
+| [`question-service`](question-service/README.md) | **3002** (REST)<br>**50052** (gRPC) | Banque de questions multitypes, critères de correction et sélection gRPC | MongoDB (`question_service`) | REST + gRPC |
+| [`assessment-service`](assessment-service/README.md) | **3003** | Création, planification et publication d'évaluations (CQRS + Event Sourcing) | MongoDB (`assessment_service`) | REST + gRPC client + RabbitMQ |
+| [`submission-service`](submission-service/README.md) | **3004** | Dépôt des copies étudiants, sauvegarde continue, upload de devoirs et contrôle de date | MongoDB (`submission_service`) + Stockage fichiers | REST + RabbitMQ |
+| [`grading-service`](grading-service/README.md) | **3005** | Correction automatique des questions fermées, saisie des notes manuelles et publication | MongoDB (`grading_service`) | REST + RabbitMQ |
+| [`notification-service`](notification-service/README.md) | *Worker sans port HTTP* | Consommation des événements métier et enregistrement/diffusion des notifications | MongoDB (`notification_service`) | RabbitMQ uniquement |
+| [`frontend`](frontend/README.md) | **5173** | Interface web enseignant/étudiant en React 19, Tailwind CSS v4 et Vite | Client Web (SPA) | REST (vers Gateway ou proxy direct) |
+
+---
+
+## 2. Dépendances et Prérequis Système
+
+- **Node.js** : version `>= 20.0.0` (testé avec Node v24)
+- **npm** : version `>= 10.0.0`
+- **MongoDB** : instance locale ou conteneur (`mongodb://127.0.0.1:27017`)
+- **Docker & Docker Compose** : requis pour exécuter le broker de messages RabbitMQ
+
+---
+
+## 3. Matrice des Ports et Variables d'Environnement
+
+Chaque service dispose d'un modèle `.env.example`. Voici la synthèse des ports et URLs :
+
+| Service | Variable Port | Port Défaut | Dépendances & URLs requises |
 |---|---|---|---|
-| user-service | Authentification, gestion des rôles (Admin/Enseignant/Étudiant), profils | Users, Roles | REST |
-| question-service | Banque de questions (CRUD, recherche, filtre) | Questions | REST + gRPC (SelectQuestions) |
-| assessment-service | Création, planification, publication des évaluations | Evaluations | REST + Messaging |
-| submission-service | Réalisation, saisie de réponses, dépôt de fichiers, soumission | Submissions | REST + Messaging |
-| grading-service | Correction automatique et manuelle, notes, commentaires | Grades | REST + Messaging |
-| notification-service | Envoi des notifications aux utilisateurs | Notifications | Messaging |
-| api-gateway | Routage, authentification centralisée | - | REST |
-| frontend | Interface web (React) enseignant/étudiant | - | REST (via api-gateway à terme) |
+| **RabbitMQ** | - | `5672` (AMQP)<br>`15672` (UI Admin) | Interface d'administration : `http://localhost:15672` (guest / guest) |
+| **api-gateway** | `PORT` | `3000` | `USER_SERVICE_URL=http://localhost:3001`<br>`QUESTION_SERVICE_URL=http://localhost:3002`<br>`ASSESSMENT_SERVICE_URL=http://localhost:3003`<br>`SUBMISSION_SERVICE_URL=http://localhost:3004`<br>`GRADING_SERVICE_URL=http://localhost:3005` |
+| **user-service** | `PORT` | `3001` | `MONGO_URI=mongodb://127.0.0.1:27017/user_service`<br>`JWT_SECRET=change-me-en-dev` |
+| **question-service** | `PORT`<br>`GRPC_PORT` | `3002`<br>`50052` | `MONGO_URI=mongodb://127.0.0.1:27017/question_service` |
+| **assessment-service** | `PORT` | `3003` | `MONGO_URI=mongodb://127.0.0.1:27017/assessment_service`<br>`QUESTION_SERVICE_GRPC_URL=localhost:50052`<br>`RABBITMQ_URL=amqp://localhost:5672` |
+| **submission-service** | `PORT` | `3004` | `MONGO_URI=mongodb://127.0.0.1:27017/submission_service`<br>`RABBITMQ_URL=amqp://localhost:5672` |
+| **grading-service** | `PORT` | `3005` | `MONGO_URI=mongodb://127.0.0.1:27017/grading_service`<br>`RABBITMQ_URL=amqp://localhost:5672`<br>`ASSESSMENT_SERVICE_URL=http://localhost:3003`<br>`QUESTION_SERVICE_URL=http://localhost:3002` |
+| **notification-service** | *Aucun* | - | `MONGO_URI=mongodb://127.0.0.1:27017/notification_service`<br>`RABBITMQ_URL=amqp://localhost:5672` |
+| **frontend** | `server.port` | `5173` | Proxifie vers `http://localhost:3002` et `http://localhost:3003` (ou Gateway `3000`) |
 
-## Cycle de vie d'une évaluation
+---
 
-Création des questions → Construction de l'évaluation → Planification →
-Publication → Réalisation → Soumission → Correction → Résultats
+## 4. Comptes de Test et Données Initiales
 
-## Communication entre services
+### 1. Comptes Utilisateurs (`user-service`)
+Le script de seed initialise les 3 comptes de démonstration pour couvrir tous les cas d'utilisation :
 
-- **Synchrone** : REST (CRUD) et gRPC (`assessment-service` → `question-service`
-  pour la génération automatique d'une évaluation).
-- **Asynchrone** : broker de messages (RabbitMQ), événements
-  `AssessmentPublished`, `SubmissionCompleted`, `AssessmentClosingSoon`,
-  `GradingCompleted`, `ResultPublished`.
-- **Saga** : coordination Soumission → Correction → Notification, avec
-  compensation en cas d'échec.
-- **CQRS + Event Sourcing** : séparation lecture/écriture sur `assessment-service`.
+```bash
+cd user-service && npm run seed
+```
 
-## Stack technique
+| Rôle | Email | Mot de passe | Description & Permissions |
+|---|---|---|---|
+| `ADMINISTRATEUR` | `admin@evaluations.local` | `admin123` | Gestion globale des utilisateurs et des statuts de compte |
+| `ENSEIGNANT` | `enseignant@evaluations.local` | `enseignant123` | Création de questions, d'évaluations et correction des copies |
+| `ETUDIANT` | `etudiant@evaluations.local` | `etudiant123` | Consultation, passage des examens et consultation de ses notes |
 
-- Backend : Node.js / Express (un service par dossier)
-- Frontend : React (Vite), voir `frontend/`
-- Communication : REST, gRPC (`assessment-service` → `question-service`),
-  RabbitMQ pour les événements
-- Conteneurisation : Docker / Docker Compose
-- Contrats d'API : OpenAPI/Swagger (voir `docs/openapi/`)
+### 2. Banque de Questions (`question-service`)
+Un jeu de questions variées (QCM, Vrai/Faux, questions courtes, questions ouvertes) portant sur les *Systèmes Distribués* est prêt à l'emploi :
 
-## Documentation
+```bash
+cd question-service && node src/scripts/seed.js
+```
 
-- [Cahier de conception](docs/cahier-de-conception.md) — problème, acteurs, règles métier, cas d'utilisation, user stories
-- [Analyse DDD](docs/ddd-analysis.md) — domaine, sous-domaines, Bounded Contexts, Context Map
-- [Architecture](docs/architecture.md) — diagramme, flux, Saga, CQRS/Event Sourcing
+---
 
-## Démarrage
+## 5. Guide d'Installation et de Démarrage
 
-### Message broker (RabbitMQ)
-
+### Étape 1 : Démarrer l'infrastructure partagée (RabbitMQ)
 ```bash
 docker compose up -d rabbitmq
 ```
+L'interface de gestion RabbitMQ est immédiatement accessible sur [http://localhost:15672](http://localhost:15672) (identifiants : `guest` / `guest`).
 
-- AMQP : `amqp://localhost:5672` (valeur par défaut de `RABBITMQ_URL` dans
-  chaque service)
-- Interface d'admin : http://localhost:15672 (guest / guest) — permet de
-  voir l'exchange `evaluations.events`, les queues de chaque service et
-  les messages qui transitent
-- L'exchange et les queues sont déclarés par les services eux-mêmes au
-  démarrage (voir « Convention de messaging » dans
-  [docs/architecture.md](docs/architecture.md))
+### Étape 2 : Installer les dépendances
+Installer les packages pour l'ensemble des microservices et du frontend :
+```bash
+# Option A : script automatisé
+cd e2e && npm run install:services && cd ..
 
-Chaque service se lance ensuite avec `npm install && npm start` dans son
-dossier (MongoDB local requis, voir le `.env.example` du service).
+# Option B : installation manuelle dans chaque dossier
+cd api-gateway && npm install && cd ..
+cd user-service && npm install && cd ..
+cd question-service && npm install && cd ..
+cd assessment-service && npm install && cd ..
+cd submission-service && npm install && cd ..
+cd grading-service && npm install && cd ..
+cd notification-service && npm install && cd ..
+cd frontend && npm install && cd ..
+```
 
-## Tests bout-en-bout
+### Étape 3 : Initialiser les bases de données (Seed)
+```bash
+# Initialiser les utilisateurs
+node user-service/src/scripts/seed.js
 
-Parcours complet et scénarios d'échec (dépôt hors délai, correction
-manquante), sur une infrastructure Docker jetable : voir
-[e2e/README.md](e2e/README.md).
+# Initialiser la banque de questions
+node question-service/src/scripts/seed.js
+```
+
+### Étape 4 : Lancer les services
+Dans des terminaux séparés (ou via un orchestrateur de processus) :
 
 ```bash
-cd e2e && npm run install:services && npm test
+# 1. Services fondamentaux
+cd user-service && npm start
+cd question-service && npm start
+
+# 2. Services métier
+cd assessment-service && npm start
+cd submission-service && npm start
+cd grading-service && npm start
+cd notification-service && npm start
+
+# 3. Passerelle et Interface Web
+cd api-gateway && npm start
+cd frontend && npm run dev
 ```
+
+---
+
+## 6. Synthèse des API Principales (via API Gateway - Port 3000)
+
+Toutes les requêtes peuvent être adressées à la passerelle sur `http://localhost:3000/api` avec l'en-tête `Authorization: Bearer <token_jwt>`.
+
+### Authentification & Utilisateurs
+- `POST /api/auth/login` : Connexion et récupération du JWT (Public).
+- `GET /api/users` : Liste des profils (`ADMINISTRATEUR`, `ENSEIGNANT`).
+- `POST /api/users` : Création de compte (`ADMINISTRATEUR`).
+- `PATCH /api/users/:id/status` : Activation / Désactivation (`ADMINISTRATEUR`).
+
+### Banque de Questions
+- `GET /api/questions` : Consultation et recherche avec filtres (`subject`, `difficulty`, etc.).
+- `POST /api/questions` : Création de question (Enseignant/Admin).
+- `DELETE /api/questions/:id` : Archivage / suppression douce (Enseignant/Admin).
+- *RPC interne* : `QuestionService.SelectQuestions` sur le port `50052`.
+
+### Évaluations (CQRS / Event Sourcing)
+- `GET /api/assessments` : Liste des évaluations projetées dans le Read Model.
+- `POST /api/assessments` : Création (manuelle ou par tirage automatique gRPC).
+- `POST /api/assessments/:id/publish` : Publication officielle (émet `assessment.published`).
+- `POST /api/assessments/:id/cancel` : Annulation de l'évaluation.
+- `GET /api/assessments/:id/results` : Résultats et moyenne de l'évaluation (visibles post-validation).
+- `POST /api/assessments/:id/rebuild` : Recalcul complet de la projection depuis l'Event Store.
+
+### Soumissions
+- `POST /api/submissions` : Début d'une tentative étudiante sur une évaluation ouverte.
+- `PUT /api/submissions/:id/answers` : Sauvegarde intermédiaire des réponses (brouillon).
+- `POST /api/submissions/:id/files` : Téléversement de devoir (multipart/form-data).
+- `POST /api/submissions/:id/submit` : Remise définitive et émission de `submission.completed`.
+
+### Correction & Notes
+- `GET /api/gradings/pending` : Copies en attente de correction manuelle (Enseignant).
+- `PUT /api/gradings/:submissionId/questions/:questionId` : Attribution de note et commentaire.
+- `POST /api/gradings/:submissionId/validate` : Validation définitive de la copie et publication (`result.published`).
+
+---
+
+## 7. Saga Métier et Événements Asynchrones
+
+La plateforme utilise le patron de **Saga chorégraphiée** sur l'exchange Topic `evaluations.events` :
+
+```
+                  ┌──────────────────────┐
+                  │  assessment-service  │
+                  └──────────┬───────────┘
+                             │ assessment.published
+                             ▼
+                  ┌──────────────────────┐
+                  │  submission-service  │ (Ouvre l'accès aux étudiants)
+                  └──────────┬───────────┘
+                             │ submission.completed
+                             ▼
+                  ┌──────────────────────┐
+                  │   grading-service    │ (Correction auto des QCM/questions courtes)
+                  └──────────┬───────────┘
+                             │ result.published (après validation manuelle enseignant)
+                             ▼
+         ┌───────────────────┴───────────────────┐
+         ▼                                       ▼
+┌──────────────────┐                   ┌──────────────────────┐
+│assessment-service│                   │ notification-service │
+│(Actualise notes) │                   │(Alerte l'étudiant)   │
+└──────────────────┘                   └──────────────────────┘
+```
+
+---
+
+## 8. Tests Bout-en-Bout (E2E)
+
+Pour exécuter la suite de tests automatisée validant le cycle de vie complet (nominal et scénarios d'erreur) :
+
+```bash
+cd e2e
+npm test
+```
+
+---
+
+## 9. Liens et Documentation Détaillée
+
+- [README `api-gateway`](api-gateway/README.md)
+- [README `user-service`](user-service/README.md)
+- [README `question-service`](question-service/README.md)
+- [README `assessment-service`](assessment-service/README.md)
+- [README `submission-service`](submission-service/README.md)
+- [README `grading-service`](grading-service/README.md)
+- [README `notification-service`](notification-service/README.md)
+- [README `frontend`](frontend/README.md)
+- [Cahier de conception métier](docs/cahier-de-conception.md)
+- [Analyse Domain-Driven Design (DDD)](docs/ddd-analysis.md)
+- [Dossier d'Architecture Technique](docs/architecture.md)
+- [Spécifications OpenAPI / Swagger](docs/openapi/)
