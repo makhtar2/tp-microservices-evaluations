@@ -3,7 +3,12 @@ const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
 const { selectQuestions } = require('./selectQuestions');
 
-const PROTO_PATH = path.join(__dirname, '../../../docs/protos/question.proto');
+const fs = require('fs');
+const PROTO_PATH = process.env.PROTO_PATH || (
+  fs.existsSync('/docs/protos/question.proto')
+    ? '/docs/protos/question.proto'
+    : path.join(__dirname, '../../../docs/protos/question.proto')
+);
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
   keepCase: false,
   longs: String,
