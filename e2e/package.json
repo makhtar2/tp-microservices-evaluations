@@ -5,6 +5,7 @@
   "description": "Tests bout-en-bout de la plateforme d'évaluations (parcours complet et scénarios d'échec)",
   "scripts": {
     "test": "node --test-reporter=spec index.js",
+    "test:sanity": "node scripts/test-docs-and-docker.js",
     "install:services": "node scripts/install-services.js"
   },
   "engines": {
