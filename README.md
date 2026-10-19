@@ -197,7 +197,33 @@ La plateforme utilise le patron de **Saga chorégraphiée** sur l'exchange Topic
 
 ---
 
-## 8. Tests Bout-en-Bout (E2E)
+## 8. Tests
+
+### Tests unitaires
+
+Chaque service backend a ses tests unitaires dans son dossier `test/`
+(`node:test`, Node ≥ 22). MongoDB, RabbitMQ et les services distants y sont
+simulés : aucune infrastructure n'est nécessaire.
+
+```bash
+cd grading-service && npm test   # un seul service
+cd e2e && npm run test:unit      # tous les services, avec récapitulatif
+```
+
+| Service | Ce qui est testé |
+|---|---|
+| `api-gateway` | Routage et réécriture des chemins, JWT, rôles par méthode, anti-usurpation `X-User-*`, 502 si un service est indisponible |
+| `user-service` | Émission/vérification des JWT, hachage des mots de passe, routes login et gestion des comptes |
+| `question-service` | Répartition par difficulté et sélection gRPC `SelectQuestions` |
+| `assessment-service` | Projection Event Sourcing et rebuild, règles de publication/annulation, statistiques des résultats |
+| `submission-service` | Cycle de vie d'une copie, refus hors délai, événement `submission.completed` |
+| `grading-service` | Correction automatique par type de question, correction manuelle, validation, copie `EN_ATTENTE` si un service est injoignable |
+| `notification-service` | Notifications produites pour chacun des 5 événements métier |
+
+Ces tests tournent aussi sur GitHub Actions à chaque push sur `main` et à
+chaque pull request (`.github/workflows/tests.yml`).
+
+### Tests bout-en-bout (E2E)
 
 Pour exécuter la suite de tests automatisée validant le cycle de vie complet (nominal et scénarios d'erreur) :
 
