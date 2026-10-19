@@ -3,11 +3,12 @@ const assert = require("node:assert/strict");
 const { ROUTING_KEYS, buildNotifications } = require("../src/templates");
 
 describe("ROUTING_KEYS", () => {
-  it("couvre les 5 événements métier et le refus de dépôt", () => {
+  it("couvre les 5 événements métier, le refus de dépôt et l'échec de correction", () => {
     assert.deepEqual([...ROUTING_KEYS].sort(), [
       "assessment.closing_soon",
       "assessment.published",
       "grading.completed",
+      "grading.failed",
       "result.published",
       "submission.completed",
       "submission.rejected",
@@ -65,6 +66,25 @@ describe("buildNotifications", () => {
     assert.equal(n.userId, "etu-1");
     assert.equal(n.type, "SubmissionRejected");
     assert.match(n.message, /date limite/);
+  });
+
+  it("grading.failed prévient l'étudiant et l'enseignant responsable", () => {
+    const [etudiant, enseignant] = buildNotifications("grading.failed", {
+      assessmentId: "a",
+      submissionId: "sub-1",
+      etudiantId: "etu-1",
+      enseignantId: "ens-1",
+      error: "HTTP 503",
+    });
+    assert.equal(etudiant.userId, "etu-1");
+    assert.equal(enseignant.userId, "ens-1");
+    assert.equal(enseignant.role, undefined);
+    assert.match(enseignant.message, /sub-1.*HTTP 503/);
+  });
+
+  it("grading.failed prévient tous les enseignants si le responsable est inconnu", () => {
+    const [, enseignant] = buildNotifications("grading.failed", { assessmentId: "a", etudiantId: "etu-1" });
+    assert.equal(enseignant.role, "ENSEIGNANT");
   });
 
   it("grading.completed ne révèle pas la note avant publication", () => {

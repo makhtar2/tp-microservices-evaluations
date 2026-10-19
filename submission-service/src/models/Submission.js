@@ -25,6 +25,12 @@ const submissionSchema = new Schema(
     fichiers: { type: [fichierSchema], default: [] },
     status: { type: String, enum: SUBMISSION_STATUSES, default: "EN_COURS", index: true },
     soumiseAt: { type: Date, default: null },
+    // Compensation de la Saga : renseigné quand grading-service abandonne la
+    // correction automatique (grading.failed), effacé dès qu'elle aboutit.
+    incidentCorrection: {
+      type: new Schema({ message: String, survenuAt: Date }, { _id: false }),
+      default: null,
+    },
   },
   { timestamps: true }
 );

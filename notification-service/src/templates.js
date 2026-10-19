@@ -46,6 +46,21 @@ const TEMPLATES = {
       message: "La correction de votre copie est terminée. Le résultat sera visible dès sa publication.",
     },
   ],
+  "grading.failed": (e) => [
+    {
+      userId: e.etudiantId,
+      type: "GradingFailed",
+      titre: "Correction retardée",
+      message: "Votre copie a bien été reçue, mais sa correction automatique a échoué. Votre enseignant a été prévenu.",
+    },
+    {
+      userId: e.enseignantId,
+      role: e.enseignantId ? undefined : "ENSEIGNANT",
+      type: "GradingFailed",
+      titre: "Correction automatique en échec",
+      message: `La copie ${e.submissionId} n'a pas pu être corrigée automatiquement (${e.error || "erreur inconnue"}). Relancez-la depuis la page Correction.`,
+    },
+  ],
   "result.published": (e) => [
     {
       userId: e.etudiantId,

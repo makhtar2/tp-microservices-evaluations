@@ -143,8 +143,27 @@ async function submit(submissionId, caller) {
   return submission;
 }
 
+// Compensation (grading.failed) : la copie reste SOUMISE, l'étudiant n'a
+// rien à refaire, mais l'incident est visible pour lui et l'enseignant.
+async function recordGradingIncident({ submissionId, error }) {
+  const submission = await findSubmission(submissionId);
+  if (!submission) return null;
+  submission.incidentCorrection = { message: error || "Correction automatique impossible", survenuAt: new Date() };
+  return submission.save();
+}
+
+// grading.completed : la correction a finalement abouti (relance).
+async function clearGradingIncident({ submissionId }) {
+  const submission = await findSubmission(submissionId);
+  if (!submission || !submission.incidentCorrection) return null;
+  submission.incidentCorrection = null;
+  return submission.save();
+}
+
 module.exports = {
   CommandError,
+  recordGradingIncident,
+  clearGradingIncident,
   ensureAccess,
   findSubmission,
   listSubmissions,

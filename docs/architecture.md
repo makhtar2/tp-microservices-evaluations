@@ -75,11 +75,29 @@ SubmissionCompleted → grading-service (correction auto)
                   notification-service (notifie l'étudiant)
 ```
 
-**Compensation** : si la correction automatique échoue ou si la
-soumission arrive hors délai, `submission-service` déclenche
-`AnnulerSoumission` et `grading-service` ne produit pas de note ; l'état
-reste consultable par l'enseignant pour intervention manuelle
-(`RouvrirCorrection`).
+**Compensation** (implémentée) :
+
+- **Soumission hors délai** : `submission-service` passe la copie en
+  `REFUSEE_HORS_DELAI`, ne publie pas `SubmissionCompleted` (aucune
+  correction n'est déclenchée) et publie `submission.rejected` ;
+  `notification-service` prévient l'étudiant.
+- **Correction automatique impossible** (service distant injoignable) :
+  `grading-service` garde la copie `EN_ATTENTE` et la relance
+  périodiquement. Après `GRADING_MAX_ATTEMPTS` échecs, la copie passe en
+  `ECHEC_CORRECTION` et `grading-service` publie `grading.failed` :
+  `submission-service` signale l'incident sur la copie
+  (`incidentCorrection`) et `notification-service` prévient l'étudiant et
+  l'enseignant. L'enseignant relance la correction
+  (`POST /gradings/:id/retry`) ; quand elle aboutit, `grading.completed`
+  efface l'incident côté `submission-service`.
+
+```
+SubmissionCompleted → grading-service ──(échecs répétés)──▶ grading.failed
+                                                            │
+                       ┌────────────────────────────────────┤
+                       ▼                                    ▼
+        submission-service (incident)          notification-service
+```
 
 ## CQRS + Event Sourcing (assessment-service)
 
@@ -110,8 +128,8 @@ interopérables :
     `assessment-service`
   - `submission.completed`, `submission.rejected` (copie refusée hors
     délai, règle métier 2) — publiés par `submission-service`
-  - `grading.completed`, `result.published` — à publier par
-    `grading-service`
+  - `grading.completed`, `result.published`, `grading.failed`
+    (compensation) — publiés par `grading-service`
 - **Payload** : JSON, contient toujours `assessmentId` et, le cas échéant,
   `etudiantId`
 - Chaque service consommateur déclare sa propre queue durable et la lie
