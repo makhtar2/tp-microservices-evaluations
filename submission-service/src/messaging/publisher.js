@@ -26,4 +26,16 @@ function publishSubmissionCompleted(submission) {
   });
 }
 
-module.exports = { publish, publishSubmissionCompleted };
+// Refus automatique d'une copie hors délai (règle métier 2) : permet à
+// notification-service de prévenir l'étudiant de l'échec du dépôt.
+function publishSubmissionRejected(submission, motif) {
+  return publish("submission.rejected", {
+    submissionId: submission.id,
+    assessmentId: submission.assessmentId,
+    etudiantId: submission.etudiantId,
+    motif,
+    occurredAt: new Date().toISOString(),
+  });
+}
+
+module.exports = { publish, publishSubmissionCompleted, publishSubmissionRejected };

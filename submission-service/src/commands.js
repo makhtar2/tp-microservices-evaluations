@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Submission = require("./models/Submission");
 const OpenAssessment = require("./models/OpenAssessment");
-const { publishSubmissionCompleted } = require("./messaging/publisher");
+const { publishSubmissionCompleted, publishSubmissionRejected } = require("./messaging/publisher");
 
 class CommandError extends Error {
   constructor(status, message) {
@@ -90,6 +90,7 @@ async function loadModifiable(submissionId, caller) {
   if (isPastDeadline(assessment)) {
     submission.status = "REFUSEE_HORS_DELAI";
     await submission.save();
+    await publishSubmissionRejected(submission.toJSON(), "HORS_DELAI");
     throw new CommandError(409, "Date limite dépassée : la copie est refusée");
   }
 

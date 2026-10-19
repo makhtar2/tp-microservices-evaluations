@@ -3,13 +3,14 @@ const assert = require("node:assert/strict");
 const { ROUTING_KEYS, buildNotifications } = require("../src/templates");
 
 describe("ROUTING_KEYS", () => {
-  it("couvre les 5 événements métier", () => {
+  it("couvre les 5 événements métier et le refus de dépôt", () => {
     assert.deepEqual([...ROUTING_KEYS].sort(), [
       "assessment.closing_soon",
       "assessment.published",
       "grading.completed",
       "result.published",
       "submission.completed",
+      "submission.rejected",
     ]);
   });
 });
@@ -57,6 +58,13 @@ describe("buildNotifications", () => {
     assert.equal(n.userId, "etu-1");
     assert.equal(n.type, "SubmissionCompleted");
     assert.match(n.message, /09:30:00 UTC/);
+  });
+
+  it("submission.rejected prévient l'étudiant de l'échec de son dépôt", () => {
+    const [n] = buildNotifications("submission.rejected", { assessmentId: "a", etudiantId: "etu-1", motif: "HORS_DELAI" });
+    assert.equal(n.userId, "etu-1");
+    assert.equal(n.type, "SubmissionRejected");
+    assert.match(n.message, /date limite/);
   });
 
   it("grading.completed ne révèle pas la note avant publication", () => {

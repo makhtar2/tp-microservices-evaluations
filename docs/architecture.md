@@ -108,7 +108,8 @@ interopérables :
 - **Routing keys** (une par événement métier) :
   - `assessment.published`, `assessment.closing_soon` — publiés par
     `assessment-service`
-  - `submission.completed` — à publier par `submission-service`
+  - `submission.completed`, `submission.rejected` (copie refusée hors
+    délai, règle métier 2) — publiés par `submission-service`
   - `grading.completed`, `result.published` — à publier par
     `grading-service`
 - **Payload** : JSON, contient toujours `assessmentId` et, le cas échéant,

@@ -132,6 +132,19 @@ describe("saveAnswers (auto-save)", () => {
     assert.equal(submission.status, "REFUSEE_HORS_DELAI");
     assert.equal(submission.reponses[0].reponse, "A");
   });
+
+  it("publie submission.rejected pour prévenir l'étudiant du refus", async () => {
+    publishAssessment("a1");
+    const { id } = await openSubmission({ assessmentId: "a1", etudiantId: "e1" });
+    expire("a1");
+    await assertCommandError(saveAnswers(id, [{ questionId: "q1", reponse: "B" }]), 409);
+    assert.equal(published.length, 1);
+    assert.equal(published[0].routingKey, "submission.rejected");
+    assert.deepEqual(
+      { ...published[0].payload, occurredAt: undefined },
+      { submissionId: id, assessmentId: "a1", etudiantId: "e1", motif: "HORS_DELAI", occurredAt: undefined }
+    );
+  });
 });
 
 describe("addFile", () => {
@@ -183,13 +196,13 @@ describe("submit", () => {
     assert.equal(published.length, 1);
   });
 
-  it("ne publie rien pour une copie soumise hors délai", async () => {
+  it("ne publie pas submission.completed pour une copie soumise hors délai", async () => {
     publishAssessment("a1");
     const { id } = await openSubmission({ assessmentId: "a1", etudiantId: "e1" });
     expire("a1");
     await assertCommandError(submit(id), 409);
     assert.equal(submissions.get(id).status, "REFUSEE_HORS_DELAI");
-    assert.equal(published.length, 0);
+    assert.deepEqual(published.map((m) => m.routingKey), ["submission.rejected"]);
   });
 });
 

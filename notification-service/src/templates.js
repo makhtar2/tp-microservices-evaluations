@@ -30,6 +30,14 @@ const TEMPLATES = {
       message: `Votre copie a bien été reçue le ${formatDate(e.soumiseAt)}.`,
     },
   ],
+  "submission.rejected": (e) => [
+    {
+      userId: e.etudiantId,
+      type: "SubmissionRejected",
+      titre: "Dépôt refusé",
+      message: "La date limite de l'évaluation est dépassée : votre copie n'a pas pu être déposée.",
+    },
+  ],
   "grading.completed": (e) => [
     {
       userId: e.etudiantId,
