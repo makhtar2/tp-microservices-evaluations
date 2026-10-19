@@ -1,0 +1,36 @@
+# Tests unitaires de chaque service backend, à chaque push et pull request.
+# Les tests simulent MongoDB et RabbitMQ : aucun conteneur n'est nécessaire.
+name: Tests unitaires
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unit:
+    name: ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - api-gateway
+          - user-service
+          - question-service
+          - assessment-service
+          - submission-service
+          - grading-service
+          - notification-service
+    defaults:
+      run:
+        working-directory: ${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.service }}/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
