@@ -1,16 +1,28 @@
 const AssessmentReadModel = require("./models/AssessmentReadModel");
 
+// Un étudiant ne voit que les évaluations publiées (jamais un brouillon,
+// une évaluation planifiée ou annulée).
+const STATUTS_VISIBLES_ETUDIANT = ["PUBLIEE", "EN_COURS", "TERMINEE", "CORRIGEE"];
+
+function isVisibleTo(assessment, role) {
+  return role !== "ETUDIANT" || STATUTS_VISIBLES_ETUDIANT.includes(assessment.status);
+}
+
 // Query : liste des évaluations (Read Model)
-async function listAssessments({ enseignantId, status } = {}) {
+async function listAssessments({ enseignantId, status, role } = {}) {
   const filter = {};
   if (enseignantId) filter.enseignantId = enseignantId;
   if (status) filter.status = status;
+  if (role === "ETUDIANT") {
+    filter.status = status && STATUTS_VISIBLES_ETUDIANT.includes(status) ? status : { $in: STATUTS_VISIBLES_ETUDIANT };
+  }
   return AssessmentReadModel.find(filter).lean();
 }
 
 // Query : consultation d'une évaluation (Read Model)
-async function getAssessment(assessmentId) {
-  return AssessmentReadModel.findById(assessmentId).lean();
+async function getAssessment(assessmentId, { role } = {}) {
+  const assessment = await AssessmentReadModel.findById(assessmentId).lean();
+  return assessment && isVisibleTo(assessment, role) ? assessment : null;
 }
 
 function tranchePourcentage(note, bareme) {
@@ -24,10 +36,11 @@ function tranchePourcentage(note, bareme) {
 // Query : GET /assessments/:id/results (Read Model)
 // Ne remonte un résultat individuel que pour les étudiants dont
 // ResultPublished a été reçu (règle métier : jamais avant, même si la
-// correction est terminée côté grading-service).
-async function getResults(assessmentId) {
+// correction est terminée côté grading-service). Un étudiant ne reçoit
+// que les statistiques globales et son propre résultat (UC8).
+async function getResults(assessmentId, { role, userId } = {}) {
   const assessment = await AssessmentReadModel.findById(assessmentId).lean();
-  if (!assessment) return null;
+  if (!assessment || !isVisibleTo(assessment, role)) return null;
 
   const publies = (assessment.resultatsEtudiants || []).filter((r) => r.resultPublished);
   const moyenne = publies.length > 0 ? publies.reduce((sum, r) => sum + r.note, 0) / publies.length : 0;
@@ -43,7 +56,7 @@ async function getResults(assessmentId) {
     moyenne,
     nombreSoumissions: publies.length,
     repartitionNotes: Object.entries(repartition).map(([tranche, effectif]) => ({ tranche, effectif })),
-    resultatsEtudiants: publies,
+    resultatsEtudiants: role === "ETUDIANT" ? publies.filter((r) => r.etudiantId === userId) : publies,
   };
 }
 

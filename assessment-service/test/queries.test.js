@@ -1,7 +1,7 @@
 const { describe, it, afterEach, mock } = require("node:test");
 const assert = require("node:assert/strict");
 const AssessmentReadModel = require("../src/models/AssessmentReadModel");
-const { getResults } = require("../src/queries");
+const { getResults, listAssessments, getAssessment } = require("../src/queries");
 
 // Le Read Model est simulé : findById(...).lean() renvoie le document fourni.
 function readModelReturns(doc) {
@@ -69,6 +69,41 @@ describe("getResults", () => {
     assert.deepEqual(parTranche, { "0-25%": 1, "25-50%": 1, "50-75%": 1, "75-100%": 2 });
   });
 
+  it("ne renvoie à un étudiant que son propre résultat, avec les statistiques globales", async () => {
+    readModelReturns({
+      _id: "a",
+      bareme: 20,
+      status: "CORRIGEE",
+      resultatsEtudiants: [
+        { etudiantId: "e1", note: 10, resultPublished: true },
+        { etudiantId: "e2", note: 20, resultPublished: true },
+      ],
+    });
+    const results = await getResults("a", { role: "ETUDIANT", userId: "e1" });
+    assert.deepEqual(results.resultatsEtudiants.map((r) => r.etudiantId), ["e1"]);
+    assert.equal(results.moyenne, 15);
+    assert.equal(results.nombreSoumissions, 2);
+  });
+
+  it("renvoie tous les résultats à un enseignant", async () => {
+    readModelReturns({
+      _id: "a",
+      bareme: 20,
+      status: "CORRIGEE",
+      resultatsEtudiants: [
+        { etudiantId: "e1", note: 10, resultPublished: true },
+        { etudiantId: "e2", note: 20, resultPublished: true },
+      ],
+    });
+    const results = await getResults("a", { role: "ENSEIGNANT", userId: "ens-1" });
+    assert.equal(results.resultatsEtudiants.length, 2);
+  });
+
+  it("cache à un étudiant les résultats d'une évaluation non publiée", async () => {
+    readModelReturns({ _id: "a", bareme: 20, status: "BROUILLON", resultatsEtudiants: [] });
+    assert.equal(await getResults("a", { role: "ETUDIANT", userId: "e1" }), null);
+  });
+
   it("classe tout en 0-25% si le barème est nul", async () => {
     readModelReturns({
       _id: "a",
@@ -77,5 +112,43 @@ describe("getResults", () => {
     });
     const { repartitionNotes } = await getResults("a");
     assert.deepEqual(repartitionNotes, [{ tranche: "0-25%", effectif: 1 }]);
+  });
+});
+
+describe("listAssessments / getAssessment — visibilité par rôle", () => {
+  it("ne liste pour un étudiant que les évaluations publiées", async () => {
+    let filter;
+    mock.method(AssessmentReadModel, "find", (f) => {
+      filter = f;
+      return { lean: async () => [] };
+    });
+    await listAssessments({ role: "ETUDIANT" });
+    assert.deepEqual(filter.status, { $in: ["PUBLIEE", "EN_COURS", "TERMINEE", "CORRIGEE"] });
+  });
+
+  it("ignore un filtre de statut BROUILLON demandé par un étudiant", async () => {
+    let filter;
+    mock.method(AssessmentReadModel, "find", (f) => {
+      filter = f;
+      return { lean: async () => [] };
+    });
+    await listAssessments({ role: "ETUDIANT", status: "BROUILLON" });
+    assert.notEqual(filter.status, "BROUILLON");
+  });
+
+  it("ne filtre pas les statuts pour un enseignant", async () => {
+    let filter;
+    mock.method(AssessmentReadModel, "find", (f) => {
+      filter = f;
+      return { lean: async () => [] };
+    });
+    await listAssessments({ role: "ENSEIGNANT", enseignantId: "ens-1" });
+    assert.deepEqual(filter, { enseignantId: "ens-1" });
+  });
+
+  it("cache un brouillon à un étudiant mais pas à l'enseignant", async () => {
+    readModelReturns({ _id: "a", status: "BROUILLON" });
+    assert.equal(await getAssessment("a", { role: "ETUDIANT" }), null);
+    assert.equal((await getAssessment("a", { role: "ENSEIGNANT" }))._id, "a");
   });
 });
