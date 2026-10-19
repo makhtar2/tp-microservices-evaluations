@@ -136,6 +136,10 @@ interopérables :
   aux routing keys qui l'intéressent (ex. `assessment-service` lie
   `assessment-service.grading-events` à `grading.completed` et
   `result.published`)
+- **Dead-letters** : un message dont le traitement échoue n'est plus
+  perdu. Il est copié dans `<queue>.dead-letters` (en-têtes
+  `x-routing-key`, `x-error`, `x-failed-at`) puis acquitté ; on peut
+  l'inspecter et le rejouer depuis l'interface d'administration RabbitMQ
 - Connexion tolérante aux pannes : si le broker est indisponible au
   démarrage, le service continue de fonctionner en REST (avertissement en
   log), sans bloquer sur la messagerie
