@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { Card, CardHeader } from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
@@ -14,7 +14,142 @@ const EMPTY_FORM = {
   chapter: "",
   difficulty: "FACILE",
   points: 1,
+  options: [
+    { text: "", isCorrect: true },
+    { text: "", isCorrect: false },
+  ],
+  vrai: true,
+  acceptedAnswers: "",
+  correction: "",
 };
+
+// Construit `answers` au format attendu par question-service et par la
+// correction automatique (voir question-service/src/models/Question.js).
+function toPayload(form) {
+  const { options, vrai, acceptedAnswers, correction, ...question } = form;
+  const payload = { ...question, points: Number(form.points), correction: correction || undefined };
+  if (form.type === "QCM") {
+    payload.answers = options.filter((o) => o.text.trim()).map((o) => ({ text: o.text.trim(), isCorrect: o.isCorrect }));
+  } else if (form.type === "VRAI_FAUX") {
+    payload.answers = { correctAnswer: vrai };
+  } else if (form.type === "QUESTION_COURTE") {
+    payload.answers = { acceptedAnswers: acceptedAnswers.split(";").map((a) => a.trim()).filter(Boolean) };
+  }
+  return payload;
+}
+
+function validate(form) {
+  if (form.type === "QCM") {
+    const filled = form.options.filter((o) => o.text.trim());
+    if (filled.length < 2) return "Un QCM doit avoir au moins deux options.";
+    if (!filled.some((o) => o.isCorrect)) return "Cochez au moins une bonne réponse.";
+  }
+  if (form.type === "QUESTION_COURTE" && !form.acceptedAnswers.trim()) {
+    return "Indiquez au moins une réponse acceptée.";
+  }
+  return null;
+}
+
+// Saisie de la ou des bonnes réponses selon le type de question.
+function AnswersEditor({ form, setForm }) {
+  if (form.type === "QCM") {
+    const update = (index, changes) =>
+      setForm({ ...form, options: form.options.map((o, i) => (i === index ? { ...o, ...changes } : o)) });
+    return (
+      <div className="flex flex-col gap-1.5">
+        <span className="field-label">Options (cochez la ou les bonnes réponses)</span>
+        {form.options.map((option, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              aria-label={`Option ${index + 1} correcte`}
+              checked={option.isCorrect}
+              onChange={(e) => update(index, { isCorrect: e.target.checked })}
+            />
+            <input
+              className="field-input"
+              placeholder={`Option ${index + 1}`}
+              value={option.text}
+              onChange={(e) => update(index, { text: e.target.value })}
+            />
+            {form.options.length > 2 && (
+              <button
+                type="button"
+                className="icon-action"
+                aria-label="Retirer l'option"
+                onClick={() => setForm({ ...form, options: form.options.filter((_, i) => i !== index) })}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        ))}
+        <button
+          type="button"
+          className="text-xs font-semibold text-ink-muted hover:text-primary text-left"
+          onClick={() => setForm({ ...form, options: [...form.options, { text: "", isCorrect: false }] })}
+        >
+          + Ajouter une option
+        </button>
+      </div>
+    );
+  }
+
+  if (form.type === "VRAI_FAUX") {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <span className="field-label">Bonne réponse</span>
+        <div className="segmented">
+          {[
+            [true, "Vrai"],
+            [false, "Faux"],
+          ].map(([value, label]) => (
+            <button
+              key={label}
+              type="button"
+              className={`segmented-btn${form.vrai === value ? " segmented-btn-active" : ""}`}
+              onClick={() => setForm({ ...form, vrai: value })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (form.type === "QUESTION_COURTE") {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <label className="field-label" htmlFor="accepted">
+          Réponses acceptées (séparées par ;)
+        </label>
+        <input
+          id="accepted"
+          className="field-input"
+          placeholder="RabbitMQ; Kafka"
+          value={form.acceptedAnswers}
+          onChange={(e) => setForm({ ...form, acceptedAnswers: e.target.value })}
+        />
+        <span className="text-xs text-ink-muted">La casse, les accents et les espaces autour sont ignorés.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="field-label" htmlFor="correction">
+        Guide de correction (facultatif)
+      </label>
+      <textarea
+        id="correction"
+        className="field-textarea"
+        value={form.correction}
+        onChange={(e) => setForm({ ...form, correction: e.target.value })}
+      />
+    </div>
+  );
+}
 
 export default function Questions() {
   const [questions, setQuestions] = useState(null);
@@ -42,10 +177,15 @@ export default function Questions() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    const invalid = validate(form);
+    if (invalid) {
+      setError(invalid);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
-      await createQuestion({ ...form, points: Number(form.points) });
+      await createQuestion(toPayload(form));
       setForm(EMPTY_FORM);
       load();
     } catch (err) {
@@ -147,6 +287,8 @@ export default function Questions() {
                 />
               </div>
             </div>
+
+            <AnswersEditor form={form} setForm={setForm} />
 
             <Button type="submit" disabled={submitting}>
               <Plus size={16} />
