@@ -1,0 +1,79 @@
+const { describe, it } = require("node:test");
+const assert = require("node:assert/strict");
+const { ROUTING_KEYS, buildNotifications } = require("../src/templates");
+
+describe("ROUTING_KEYS", () => {
+  it("couvre les 5 événements métier", () => {
+    assert.deepEqual([...ROUTING_KEYS].sort(), [
+      "assessment.closing_soon",
+      "assessment.published",
+      "grading.completed",
+      "result.published",
+      "submission.completed",
+    ]);
+  });
+});
+
+describe("buildNotifications", () => {
+  it("renvoie une liste vide pour un événement inconnu", () => {
+    assert.deepEqual(buildNotifications("question.created", { assessmentId: "a" }), []);
+  });
+
+  it("rattache chaque notification à l'évaluation de l'événement", () => {
+    for (const key of ROUTING_KEYS) {
+      const notifications = buildNotifications(key, { assessmentId: "a-42", etudiantId: "e", note: 1 });
+      assert.ok(notifications.length > 0, key);
+      for (const n of notifications) assert.equal(n.assessmentId, "a-42", key);
+    }
+  });
+
+  it("assessment.published notifie tous les étudiants avec la période d'ouverture", () => {
+    const [n] = buildNotifications("assessment.published", {
+      assessmentId: "a",
+      titre: "Partiel",
+      dateDebut: "2026-10-01T08:00:00Z",
+      dateFin: "2026-10-01T10:00:00Z",
+    });
+    assert.equal(n.role, "ETUDIANT");
+    assert.equal(n.userId, undefined);
+    assert.equal(n.type, "AssessmentPublished");
+    assert.equal(n.titre, "Nouvelle évaluation : Partiel");
+    assert.match(n.message, /01\/10\/2026 08:00:00 UTC/);
+    assert.match(n.message, /01\/10\/2026 10:00:00 UTC/);
+  });
+
+  it("utilise l'identifiant de l'évaluation quand le titre manque", () => {
+    const [n] = buildNotifications("assessment.closing_soon", { assessmentId: "a-7" });
+    assert.equal(n.titre, "Clôture imminente : a-7");
+    assert.match(n.message, /date non précisée/);
+  });
+
+  it("submission.completed notifie l'étudiant concerné", () => {
+    const [n] = buildNotifications("submission.completed", {
+      assessmentId: "a",
+      etudiantId: "etu-1",
+      soumiseAt: "2026-10-01T09:30:00Z",
+    });
+    assert.equal(n.userId, "etu-1");
+    assert.equal(n.type, "SubmissionCompleted");
+    assert.match(n.message, /09:30:00 UTC/);
+  });
+
+  it("grading.completed ne révèle pas la note avant publication", () => {
+    const [n] = buildNotifications("grading.completed", { assessmentId: "a", etudiantId: "etu-1", scoreTotal: 17 });
+    assert.equal(n.userId, "etu-1");
+    assert.doesNotMatch(n.message, /17/);
+  });
+
+  it("result.published donne la note, ou le score total à défaut", () => {
+    const [avecNote] = buildNotifications("result.published", { assessmentId: "a", etudiantId: "e", note: 15 });
+    assert.equal(avecNote.message, "Votre note : 15.");
+    const [avecScore] = buildNotifications("result.published", { assessmentId: "a", etudiantId: "e", scoreTotal: 12 });
+    assert.equal(avecScore.message, "Votre note : 12.");
+  });
+
+  it("result.published affiche une note de 0", () => {
+    const [n] = buildNotifications("result.published", { assessmentId: "a", etudiantId: "e", note: 0, scoreTotal: 9 });
+    assert.equal(n.message, "Votre note : 0.");
+  });
+});
