@@ -35,6 +35,17 @@ router.put("/gradings/:submissionId/questions/:questionId", async (req, res) => 
   }
 });
 
+// Relance manuelle de la correction automatique (après ECHEC_CORRECTION).
+router.post("/gradings/:submissionId/retry", async (req, res) => {
+  try {
+    const grading = await commands.retry(req.params.submissionId);
+    if (!grading) return res.status(404).json(NOT_FOUND);
+    res.json(grading);
+  } catch (error) {
+    handleCommandError(res, error);
+  }
+});
+
 router.post("/gradings/:submissionId/validate", async (req, res) => {
   try {
     const grading = await commands.validate(req.params.submissionId, req.get("x-user-id"));

@@ -1,7 +1,16 @@
 const { describe, it, beforeEach, afterEach, mock } = require("node:test");
 const assert = require("node:assert/strict");
+const amqp = require("amqplib");
 const Grading = require("../src/models/Grading");
-const { gradeSubmission, gradeQuestion, validate, CommandError } = require("../src/commands");
+const {
+  gradeSubmission,
+  retryPending,
+  retry,
+  gradeQuestion,
+  validate,
+  CommandError,
+  MAX_ATTEMPTS,
+} = require("../src/commands");
 
 // MongoDB est simulé (exists / findById / save) et les appels REST vers
 // assessment-service et question-service passent par un fetch simulé.
@@ -12,6 +21,11 @@ const QUESTIONS = {
 };
 
 let stored;
+const published = [];
+const fakeChannel = {
+  assertExchange: async () => {},
+  publish: (exchange, routingKey, content) => published.push({ routingKey, payload: JSON.parse(content.toString()) }),
+};
 
 function remote({ questionIds, down = false }) {
   mock.method(globalThis, "fetch", async (url) => {
@@ -26,6 +40,9 @@ function remote({ questionIds, down = false }) {
 
 beforeEach(() => {
   stored = null;
+  published.length = 0;
+  mock.method(amqp, "connect", async () => ({ createChannel: async () => fakeChannel }));
+  mock.method(Grading, "find", async (filter) => (stored && stored.status === filter.status ? [stored] : []));
   mock.method(console, "error", () => {});
   mock.method(Grading, "exists", async () => stored !== null);
   mock.method(Grading, "findById", async () => stored);
@@ -163,5 +180,79 @@ describe("validate", () => {
   it("refuse un autre enseignant que le responsable", async () => {
     await gradeQuestion("sub-1", "q3", { note: 3 }, "ens-1");
     await assertCommandError(validate("sub-1", "ens-2"), 403);
+  });
+});
+
+describe("compensation de la Saga — relance et abandon de la correction automatique", () => {
+  it("conserve les réponses pour pouvoir relancer la correction", async () => {
+    remote({ questionIds: ["q1"], down: true });
+    const grading = await gradeSubmission(submission);
+    assert.equal(grading.attempts, 1);
+    assert.deepEqual(grading.reponses.map((r) => r.questionId), ["q1", "q2", "q3"]);
+  });
+
+  it("retryPending corrige la copie dès que le service distant répond", async () => {
+    remote({ questionIds: ["q1", "q2"], down: true });
+    await gradeSubmission(submission);
+    mock.restoreAll();
+    remote({ questionIds: ["q1", "q2"] });
+    mock.method(Grading, "find", async () => [stored]);
+    mock.method(Grading.prototype, "save", async function save() {
+      stored = this;
+      return this;
+    });
+    const [grading] = await retryPending();
+    assert.equal(grading.status, "EN_CORRECTION_MANUELLE");
+    assert.equal(grading.attempts, 2);
+    assert.equal(grading.lastError, undefined);
+    assert.deepEqual(grading.notes.map((n) => n.note), [4, 0]);
+  });
+
+  it(`abandonne après ${MAX_ATTEMPTS} échecs et publie grading.failed`, async () => {
+    remote({ questionIds: ["q1"], down: true });
+    await gradeSubmission(submission);
+    for (let i = 1; i < MAX_ATTEMPTS; i++) await retryPending();
+
+    assert.equal(stored.status, "ECHEC_CORRECTION");
+    assert.equal(stored.attempts, MAX_ATTEMPTS);
+    assert.equal(published.length, 1);
+    assert.equal(published[0].routingKey, "grading.failed");
+    assert.equal(published[0].payload.submissionId, "sub-1");
+    assert.equal(published[0].payload.etudiantId, "etu-1");
+    assert.match(published[0].payload.error, /ECONNREFUSED/);
+
+    assert.deepEqual(await retryPending(), [], "une copie abandonnée n'est plus relancée automatiquement");
+  });
+
+  it("refuse la correction manuelle d'une copie abandonnée", async () => {
+    remote({ questionIds: ["q1"], down: true });
+    await gradeSubmission(submission);
+    stored.status = "ECHEC_CORRECTION";
+    await assertCommandError(gradeQuestion("sub-1", "q1", { note: 1 }, "ens-1"), 409);
+  });
+
+  it("retry relance manuellement une copie abandonnée", async () => {
+    remote({ questionIds: ["q1"], down: true });
+    await gradeSubmission(submission);
+    stored.status = "ECHEC_CORRECTION";
+    stored.attempts = MAX_ATTEMPTS;
+    globalThis.fetch.mock.mockImplementation(async (url) =>
+      url.includes("/assessments/")
+        ? Response.json({ _id: "ass-1", enseignantId: "ens-1", questionIds: ["q1"] })
+        : Response.json(QUESTIONS.q1)
+    );
+    const grading = await retry("sub-1");
+    assert.equal(grading.status, "EN_CORRECTION_MANUELLE");
+    assert.equal(grading.attempts, 1);
+  });
+
+  it("retry refuse une copie déjà corrigée automatiquement", async () => {
+    remote({ questionIds: ["q1"] });
+    await gradeSubmission(submission);
+    await assertCommandError(retry("sub-1"), 409);
+  });
+
+  it("retry renvoie null pour une copie inconnue", async () => {
+    assert.equal(await retry("inconnue"), null);
   });
 });
