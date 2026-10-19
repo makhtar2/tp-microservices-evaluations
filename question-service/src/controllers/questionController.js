@@ -1,4 +1,5 @@
 const Question = require('../models/Question');
+const { forRole } = require('../publicQuestion');
 
 // POST /api/questions
 exports.createQuestion = async (req, res) => {
@@ -31,7 +32,8 @@ exports.getQuestions = async (req, res) => {
       Question.countDocuments(filter),
     ]);
 
-    res.json({ total, page: numericPage, limit: numericLimit, items });
+    const role = req.get('x-user-role');
+    res.json({ total, page: numericPage, limit: numericLimit, items: items.map((q) => forRole(q, role)) });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -42,7 +44,7 @@ exports.getQuestionById = async (req, res) => {
   try {
     const question = await Question.findById(req.params.id);
     if (!question) return res.status(404).json({ error: 'Question introuvable' });
-    res.json(question);
+    res.json(forRole(question, req.get('x-user-role')));
   } catch (err) {
     res.status(400).json({ error: 'Identifiant invalide' });
   }
