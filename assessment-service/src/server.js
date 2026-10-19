@@ -3,6 +3,7 @@ require("dotenv").config();
 const connectDB = require("./config/db");
 const app = require("./app");
 const { startConsumer } = require("./messaging/consumer");
+const { startScheduler } = require("./scheduler");
 
 const PORT = process.env.PORT || 3003;
 
@@ -14,4 +15,5 @@ const PORT = process.env.PORT || 3003;
   });
 
   startConsumer();
+  startScheduler();
 })();
