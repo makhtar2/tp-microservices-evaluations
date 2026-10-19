@@ -1,10 +1,11 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutGrid, BookOpen, ClipboardList, BarChart3, LogOut, PenLine, Award, CheckSquare } from "lucide-react";
+import { LayoutGrid, BookOpen, ClipboardList, BarChart3, LogOut, PenLine, Award, CheckSquare, Users } from "lucide-react";
 import { useAuth } from "../../auth/useAuth";
 
 // Menu de chaque rôle (l'administrateur ne corrige pas : règle métier 7).
 const NAV_ITEMS = [
   { to: "/", icon: LayoutGrid, label: "Tableau de bord", end: true, roles: ["ENSEIGNANT"] },
+  { to: "/utilisateurs", icon: Users, label: "Utilisateurs", roles: ["ADMINISTRATEUR"] },
   { to: "/questions", icon: BookOpen, label: "Questions", roles: ["ENSEIGNANT", "ADMINISTRATEUR"] },
   { to: "/evaluations", icon: ClipboardList, label: "Évaluations", roles: ["ENSEIGNANT", "ADMINISTRATEUR"] },
   { to: "/correction", icon: CheckSquare, label: "Correction", roles: ["ENSEIGNANT"] },

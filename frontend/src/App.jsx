@@ -8,6 +8,7 @@ import Assessments from "./pages/Assessments";
 import Results from "./pages/Results";
 import Login from "./pages/Login";
 import Grading from "./pages/Grading";
+import Users from "./pages/Users";
 import MyAssessments from "./pages/student/MyAssessments";
 import TakeAssessment from "./pages/student/TakeAssessment";
 import MyResults from "./pages/student/MyResults";
@@ -15,6 +16,7 @@ import MyResults from "./pages/student/MyResults";
 const STAFF = ["ENSEIGNANT", "ADMINISTRATEUR"];
 const STUDENT = ["ETUDIANT"];
 const TEACHER = ["ENSEIGNANT"];
+const ADMIN = ["ADMINISTRATEUR"];
 
 function Home() {
   const { user } = useAuth();
@@ -32,6 +34,7 @@ export default function App() {
             <AppShell>
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/utilisateurs" element={<RequireAuth roles={ADMIN}><Users /></RequireAuth>} />
                 <Route path="/questions" element={<RequireAuth roles={STAFF}><Questions /></RequireAuth>} />
                 <Route path="/evaluations" element={<RequireAuth roles={STAFF}><Assessments /></RequireAuth>} />
                 <Route path="/correction" element={<RequireAuth roles={TEACHER}><Grading /></RequireAuth>} />
