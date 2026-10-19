@@ -6,8 +6,7 @@ import Button from "../components/ui/Button";
 import StateBlock from "../components/ui/StateBlock";
 import { listAssessments, createAssessment, publishAssessment, cancelAssessment } from "../api/assessments";
 import { STATUS_LABELS, STATUS_TONES } from "../constants/assessment";
-
-const DEFAULT_ENSEIGNANT_ID = "ens-demo";
+import { useAuth } from "../auth/useAuth";
 
 const NIVEAUX = {
   FACILE: { label: "Plutôt facile", repartition: { facile: 70, moyen: 25, difficile: 5 } },
@@ -30,6 +29,7 @@ const EMPTY_FORM = {
 };
 
 export default function Assessments() {
+  const { user } = useAuth();
   const [assessments, setAssessments] = useState(null);
   const [error, setError] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -38,9 +38,13 @@ export default function Assessments() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   function load() {
-    listAssessments().then(setAssessments).catch((err) => setError(err.message));
+    // Un enseignant gère ses propres évaluations ; l'administrateur les voit toutes.
+    listAssessments(user.role === "ENSEIGNANT" ? { enseignantId: user.id } : {})
+      .then(setAssessments)
+      .catch((err) => setError(err.message));
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(load, []);
 
   async function handleSubmit(e) {
@@ -50,7 +54,6 @@ export default function Assessments() {
     try {
       const payload = {
         titre: form.titre,
-        enseignantId: DEFAULT_ENSEIGNANT_ID,
         matiere: form.matiere,
         dateDebut: form.dateDebut || undefined,
         dateFin: form.dateFin || undefined,
