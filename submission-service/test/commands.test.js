@@ -4,7 +4,7 @@ const amqp = require("amqplib");
 const mongoose = require("mongoose");
 const Submission = require("../src/models/Submission");
 const OpenAssessment = require("../src/models/OpenAssessment");
-const { openSubmission, saveAnswers, addFile, submit, CommandError } = require("../src/commands");
+const { openSubmission, saveAnswers, addFile, submit, ensureAccess, CommandError } = require("../src/commands");
 
 // MongoDB est simulé (OpenAssessment / Submission) et RabbitMQ aussi :
 // amqplib.connect renvoie un canal qui enregistre les messages publiés.
@@ -190,5 +190,53 @@ describe("submit", () => {
     await assertCommandError(submit(id), 409);
     assert.equal(submissions.get(id).status, "REFUSEE_HORS_DELAI");
     assert.equal(published.length, 0);
+  });
+});
+
+describe("contrôle d'accès selon l'identité transmise par l'api-gateway", () => {
+  const etudiant = (userId) => ({ userId, role: "ETUDIANT" });
+  const enseignant = { userId: "ens-1", role: "ENSEIGNANT" };
+
+  it("ouvre toujours la copie au nom de l'étudiant connecté", async () => {
+    publishAssessment("a1");
+    const submission = await openSubmission({ assessmentId: "a1", etudiantId: "un-autre" }, etudiant("e1"));
+    assert.equal(submission.etudiantId, "e1");
+  });
+
+  it("refuse qu'un enseignant ouvre une copie", async () => {
+    publishAssessment("a1");
+    await assertCommandError(openSubmission({ assessmentId: "a1", etudiantId: "e1" }, enseignant), 403);
+  });
+
+  it("refuse qu'un étudiant modifie, complète ou soumette la copie d'un autre", async () => {
+    publishAssessment("a1");
+    const { id } = await openSubmission({ assessmentId: "a1" }, etudiant("e1"));
+    const intrus = etudiant("e2");
+    await assertCommandError(saveAnswers(id, [{ questionId: "q1", reponse: "x" }], intrus), 403);
+    await assertCommandError(addFile(id, { originalname: "r.pdf", filename: "r.pdf" }, intrus), 403);
+    await assertCommandError(submit(id, intrus), 403);
+    assert.equal(submissions.get(id).status, "EN_COURS");
+    assert.equal(published.length, 0);
+  });
+
+  it("refuse qu'un enseignant modifie une copie", async () => {
+    publishAssessment("a1");
+    const { id } = await openSubmission({ assessmentId: "a1" }, etudiant("e1"));
+    await assertCommandError(saveAnswers(id, [{ questionId: "q1", reponse: "x" }], enseignant), 403);
+  });
+
+  it("laisse l'étudiant propriétaire travailler sur sa copie", async () => {
+    publishAssessment("a1");
+    const { id } = await openSubmission({ assessmentId: "a1" }, etudiant("e1"));
+    await saveAnswers(id, [{ questionId: "q1", reponse: "A" }], etudiant("e1"));
+    assert.equal((await submit(id, etudiant("e1"))).status, "SOUMISE");
+  });
+
+  it("ensureAccess : lecture permise à l'enseignant, interdite à un autre étudiant", () => {
+    const copie = { etudiantId: "e1" };
+    assert.doesNotThrow(() => ensureAccess(copie, enseignant));
+    assert.doesNotThrow(() => ensureAccess(copie, etudiant("e1")));
+    assert.doesNotThrow(() => ensureAccess(copie, {}));
+    assert.throws(() => ensureAccess(copie, etudiant("e2")), (err) => err.status === 403);
   });
 });

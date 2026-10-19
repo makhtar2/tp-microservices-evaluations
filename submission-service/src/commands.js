@@ -10,6 +10,19 @@ class CommandError extends Error {
   }
 }
 
+// Contrôle d'accès à une copie selon l'identité transmise par l'api-gateway
+// (`caller` = { userId, role }, vide pour un appel interne) : un étudiant
+// n'accède qu'à sa propre copie ; seul l'étudiant la modifie.
+function ensureAccess(submission, caller = {}, { write = false } = {}) {
+  if (!caller.role) return;
+  if (caller.role === "ETUDIANT" && submission.etudiantId !== caller.userId) {
+    throw new CommandError(403, "Cette copie appartient à un autre étudiant");
+  }
+  if (write && caller.role !== "ETUDIANT") {
+    throw new CommandError(403, "Seul l'étudiant peut modifier sa copie");
+  }
+}
+
 function isPastDeadline(assessment, now = new Date()) {
   return Boolean(assessment && assessment.dateFin && now > assessment.dateFin);
 }
@@ -29,7 +42,12 @@ async function listSubmissions({ assessmentId, etudiantId, status }) {
 
 // Ouvre une copie : l'évaluation doit avoir été publiée (reçue via
 // AssessmentPublished) et être dans sa période active.
-async function openSubmission({ assessmentId, etudiantId }) {
+async function openSubmission({ assessmentId, etudiantId }, caller = {}) {
+  if (caller.role && caller.role !== "ETUDIANT") {
+    throw new CommandError(403, "Seul un étudiant peut ouvrir une copie");
+  }
+  // Un étudiant ouvre toujours sa propre copie, quel que soit le corps reçu.
+  if (caller.role === "ETUDIANT") etudiantId = caller.userId;
   if (!assessmentId || !etudiantId) {
     throw new CommandError(400, "assessmentId et etudiantId sont requis");
   }
@@ -59,9 +77,10 @@ async function openSubmission({ assessmentId, etudiantId }) {
 // Charge une copie encore modifiable. Si la date limite est dépassée,
 // la copie passe automatiquement en REFUSEE_HORS_DELAI (règle métier :
 // refus automatique des dépôts hors délai).
-async function loadModifiable(submissionId) {
+async function loadModifiable(submissionId, caller) {
   const submission = await findSubmission(submissionId);
   if (!submission) return null;
+  ensureAccess(submission, caller, { write: true });
 
   if (submission.status !== "EN_COURS") {
     throw new CommandError(409, `La copie n'est plus modifiable (statut ${submission.status})`);
@@ -79,12 +98,12 @@ async function loadModifiable(submissionId) {
 
 // Auto-save : les réponses reçues remplacent celles de mêmes questionId,
 // les autres réponses déjà enregistrées sont conservées.
-async function saveAnswers(submissionId, reponses) {
+async function saveAnswers(submissionId, reponses, caller) {
   if (!Array.isArray(reponses) || reponses.some((r) => !r || !r.questionId)) {
     throw new CommandError(400, "reponses doit être un tableau de { questionId, reponse }");
   }
 
-  const submission = await loadModifiable(submissionId);
+  const submission = await loadModifiable(submissionId, caller);
   if (!submission) return null;
 
   const byQuestion = new Map(submission.reponses.map((r) => [r.questionId, r.reponse]));
@@ -96,12 +115,12 @@ async function saveAnswers(submissionId, reponses) {
   return submission.save();
 }
 
-async function addFile(submissionId, file) {
+async function addFile(submissionId, file, caller) {
   if (!file) {
     throw new CommandError(400, "Aucun fichier reçu (champ multipart `file`)");
   }
 
-  const submission = await loadModifiable(submissionId);
+  const submission = await loadModifiable(submissionId, caller);
   if (!submission) return null;
 
   submission.fichiers.push({ nomFichier: file.originalname, url: `/uploads/${file.filename}` });
@@ -111,8 +130,8 @@ async function addFile(submissionId, file) {
 
 // Soumission définitive : horodatage, statut SOUMISE, publication de
 // SubmissionCompleted (déclenche la Saga côté grading-service).
-async function submit(submissionId) {
-  const submission = await loadModifiable(submissionId);
+async function submit(submissionId, caller) {
+  const submission = await loadModifiable(submissionId, caller);
   if (!submission) return null;
 
   submission.status = "SOUMISE";
@@ -125,6 +144,7 @@ async function submit(submissionId) {
 
 module.exports = {
   CommandError,
+  ensureAccess,
   findSubmission,
   listSubmissions,
   openSubmission,
