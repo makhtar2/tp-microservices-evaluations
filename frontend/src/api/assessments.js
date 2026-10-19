@@ -21,6 +21,10 @@ export function publishAssessment(id) {
   return api.post(`${BASE}/${id}/publish`);
 }
 
+export function scheduleAssessment(id, datePublication) {
+  return api.post(`${BASE}/${id}/schedule`, { datePublication });
+}
+
 export function cancelAssessment(id) {
   return api.post(`${BASE}/${id}/cancel`);
 }
