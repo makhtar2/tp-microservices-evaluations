@@ -8,6 +8,7 @@ import { listPending, getGrading, gradeQuestion, validateGrading, retryGrading }
 import { getQuestion } from "../api/questions";
 import { listAssessments } from "../api/assessments";
 import { useAuth } from "../auth/useAuth";
+import { useStudentNames } from "../hooks/useStudentNames";
 import { QUESTION_TYPE_LABELS, formatDateTime } from "../constants/assessment";
 
 const GRADING_STATUS = {
@@ -15,6 +16,7 @@ const GRADING_STATUS = {
   EN_CORRECTION_MANUELLE: { label: "À valider", tone: "positive" },
   EN_ATTENTE: { label: "Correction auto en attente", tone: "neutral" },
   ECHEC_CORRECTION: { label: "Correction auto en échec", tone: "danger" },
+  VALIDEE: { label: "Validée", tone: "positive" },
 };
 
 // Une question de la copie : réponse de l'étudiant, note (automatique ou
@@ -90,6 +92,7 @@ function QuestionGrade({ item, question, onSave, disabled }) {
 
 export default function Grading() {
   const { user } = useAuth();
+  const studentName = useStudentNames();
   const [pending, setPending] = useState(null);
   const [assessments, setAssessments] = useState({});
   const [selectedId, setSelectedId] = useState(null);
@@ -97,6 +100,7 @@ export default function Grading() {
   const [questions, setQuestions] = useState({});
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState(null);
 
   async function loadPending() {
     try {
@@ -127,6 +131,7 @@ export default function Grading() {
     setSelectedId(submissionId);
     setGrading(null);
     setError(null);
+    setNotice(null);
     try {
       const g = await getGrading(submissionId);
       setGrading(g);
@@ -151,9 +156,15 @@ export default function Grading() {
     setError(null);
     try {
       const updated = await action(grading.submissionId);
-      setGrading(updated);
+      if (updated.status === "VALIDEE") {
+        // Copie terminée : elle quitte la liste, le détail se referme.
+        setSelectedId(null);
+        setGrading(null);
+        setNotice(`Résultat publié pour ${studentName(updated.etudiantId)} (note ${updated.scoreTotal}).`);
+      } else {
+        setGrading(updated);
+      }
       await loadPending();
-      if (updated.status === "VALIDEE") setSelectedId(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -171,6 +182,11 @@ export default function Grading() {
       </h1>
 
       {error && <StateBlock title="Action impossible" hint={error} />}
+      {notice && (
+        <p role="status" className="text-sm text-accent-soft-text bg-accent-soft rounded-xl px-4 py-2.5">
+          {notice}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5 items-start">
         <Card>
@@ -188,7 +204,7 @@ export default function Grading() {
                 }`}
               >
                 <strong className="block text-[13px]">{assessments[g.assessmentId]?.titre ?? g.assessmentId}</strong>
-                <span className="text-xs text-ink-muted block mb-1">Étudiant {g.etudiantId}</span>
+                <span className="text-xs text-ink-muted block mb-1">{studentName(g.etudiantId)}</span>
                 <Badge tone={GRADING_STATUS[g.status]?.tone}>{GRADING_STATUS[g.status]?.label ?? g.status}</Badge>
               </button>
             ))}
@@ -202,7 +218,7 @@ export default function Grading() {
             <>
               <CardHeader
                 title={assessments[grading.assessmentId]?.titre ?? "Copie"}
-                subtitle={`Étudiant ${grading.etudiantId} · score actuel ${grading.scoreTotal}`}
+                subtitle={`${studentName(grading.etudiantId)} · score actuel ${grading.scoreTotal}`}
                 action={<Badge tone={GRADING_STATUS[grading.status]?.tone}>{GRADING_STATUS[grading.status]?.label}</Badge>}
               />
 

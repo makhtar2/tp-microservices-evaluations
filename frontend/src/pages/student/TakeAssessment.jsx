@@ -203,8 +203,8 @@ export default function TakeAssessment() {
         <div>
           <h1 className="text-[28px] font-extrabold tracking-tight">{assessment.titre}</h1>
           <p className="text-ink-muted text-sm">
-            {assessment.matiere} · {questions.length} question(s) · barème {assessment.bareme} · à rendre avant le{" "}
-            {formatDateTime(assessment.dateFin)}
+            {assessment.matiere} · {questions.length} question(s) · barème {assessment.bareme} ·{" "}
+            {assessment.dateFin ? `à rendre avant le ${formatDateTime(assessment.dateFin)}` : "sans date limite"}
           </p>
         </div>
         {submission && (
