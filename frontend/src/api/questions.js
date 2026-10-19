@@ -9,6 +9,11 @@ export function listQuestions(params = {}) {
   return api.get(query ? `${BASE}?${query}` : BASE);
 }
 
+// Pour un étudiant, question-service ne renvoie pas les bonnes réponses.
+export function getQuestion(id) {
+  return api.get(`${BASE}/${id}`);
+}
+
 export function createQuestion(data) {
   return api.post(BASE, data);
 }

@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutGrid, BookOpen, ClipboardList, BarChart3, LogOut } from "lucide-react";
+import { LayoutGrid, BookOpen, ClipboardList, BarChart3, LogOut, PenLine, Award } from "lucide-react";
 import { useAuth } from "../../auth/useAuth";
 
 // Menu de chaque rôle (l'administrateur ne corrige pas : règle métier 7).
@@ -8,6 +8,8 @@ const NAV_ITEMS = [
   { to: "/questions", icon: BookOpen, label: "Questions", roles: ["ENSEIGNANT", "ADMINISTRATEUR"] },
   { to: "/evaluations", icon: ClipboardList, label: "Évaluations", roles: ["ENSEIGNANT", "ADMINISTRATEUR"] },
   { to: "/resultats", icon: BarChart3, label: "Résultats", roles: ["ENSEIGNANT", "ADMINISTRATEUR"] },
+  { to: "/mes-evaluations", icon: PenLine, label: "Mes évaluations", roles: ["ETUDIANT"] },
+  { to: "/mes-resultats", icon: Award, label: "Mes résultats", roles: ["ETUDIANT"] },
 ];
 
 export default function Sidebar() {
