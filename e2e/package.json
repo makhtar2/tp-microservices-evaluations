@@ -7,7 +7,9 @@
     "test": "node --test-reporter=spec index.js",
     "test:unit": "node scripts/unit-tests.js",
     "test:sanity": "node scripts/test-docs-and-docker.js",
-    "install:services": "node scripts/install-services.js"
+    "install:services": "node scripts/install-services.js",
+    "test:ui": "node ui/parcours-interface.js",
+    "stack": "node scripts/start-stack.js"
   },
   "engines": {
     "node": ">=20"
