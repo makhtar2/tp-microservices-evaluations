@@ -95,8 +95,11 @@ async function findGrading(submissionId) {
   return Grading.findById(submissionId);
 }
 
-async function listPending({ assessmentId, enseignantId }) {
-  const filter = { status: { $in: PENDING_STATUSES } };
+// `includeFailed` ajoute les copies dont la correction automatique est en
+// attente ou abandonnée, pour que l'enseignant puisse la relancer.
+async function listPending({ assessmentId, enseignantId, includeFailed = false }) {
+  const statuses = includeFailed ? [...PENDING_STATUSES, "EN_ATTENTE", "ECHEC_CORRECTION"] : PENDING_STATUSES;
+  const filter = { status: { $in: statuses } };
   if (assessmentId) filter.assessmentId = assessmentId;
   if (enseignantId) filter.enseignantId = enseignantId;
   return Grading.find(filter).sort({ createdAt: 1 });

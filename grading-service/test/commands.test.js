@@ -8,6 +8,7 @@ const {
   retry,
   gradeQuestion,
   validate,
+  listPending,
   CommandError,
   MAX_ATTEMPTS,
 } = require("../src/commands");
@@ -254,5 +255,33 @@ describe("compensation de la Saga — relance et abandon de la correction automa
 
   it("retry renvoie null pour une copie inconnue", async () => {
     assert.equal(await retry("inconnue"), null);
+  });
+});
+
+describe("listPending", () => {
+  function captureFilter() {
+    const calls = [];
+    Grading.find.mock.mockImplementation((filter) => {
+      calls.push(filter);
+      return { sort: async () => [] };
+    });
+    return calls;
+  }
+
+  it("liste les copies à corriger manuellement ou à valider", async () => {
+    const calls = captureFilter();
+    await listPending({ enseignantId: "ens-1" });
+    assert.deepEqual(calls[0], { status: { $in: ["CORRECTION_AUTO_PARTIELLE", "EN_CORRECTION_MANUELLE"] }, enseignantId: "ens-1" });
+  });
+
+  it("ajoute les corrections en attente ou abandonnées avec includeFailed", async () => {
+    const calls = captureFilter();
+    await listPending({ includeFailed: true });
+    assert.deepEqual(calls[0].status.$in, [
+      "CORRECTION_AUTO_PARTIELLE",
+      "EN_CORRECTION_MANUELLE",
+      "EN_ATTENTE",
+      "ECHEC_CORRECTION",
+    ]);
   });
 });

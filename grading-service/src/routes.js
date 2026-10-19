@@ -14,8 +14,8 @@ function handleCommandError(res, error) {
 
 // Déclarée avant /gradings/:submissionId pour ne pas être capturée par elle.
 router.get("/gradings/pending", async (req, res) => {
-  const { assessmentId, enseignantId } = req.query;
-  res.json(await commands.listPending({ assessmentId, enseignantId }));
+  const { assessmentId, enseignantId, includeFailed } = req.query;
+  res.json(await commands.listPending({ assessmentId, enseignantId, includeFailed: includeFailed === "true" }));
 });
 
 router.get("/gradings/:submissionId", async (req, res) => {
