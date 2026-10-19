@@ -65,3 +65,18 @@ Création → publication → soumission → correction → résultat :
   reste `SOUMISE`, la correction reste `EN_ATTENTE` avec l'erreur enregistrée,
   et l'enseignant ne peut ni noter ni valider. `question-service` est
   redémarré à la fin du scénario.
+
+### Sécurité et planification (`scenarios/securite-et-planification.test.js`)
+
+Règles appliquées à partir de l'identité transmise par l'api-gateway :
+
+- un étudiant lit les questions sans les bonnes réponses ni le guide de correction ;
+- un brouillon est invisible pour les étudiants ;
+- l'enseignant responsable d'une évaluation est celui du token ;
+- un étudiant ne peut ni ouvrir, ni lire, ni modifier la copie d'un autre ;
+- un fichier exécutable est refusé au dépôt ;
+- un étudiant ne voit que son propre résultat (avec la moyenne de la classe).
+
+Planification : une évaluation planifiée est publiée automatiquement à la
+date prévue (`AssessmentPublished` émis, copie ouvrable), et une date passée
+ou une évaluation sans question est refusée.
