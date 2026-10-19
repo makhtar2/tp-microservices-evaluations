@@ -8,7 +8,9 @@ const { Schema } = mongoose;
 const EVENT_TYPES = [
   "AssessmentCreated",
   "AssessmentUpdated",
+  "AssessmentScheduled",
   "AssessmentPublished",
+  "AssessmentClosingSoonNotified",
   "AssessmentCancelled",
   "GradingCompleted",
   "ResultPublished",

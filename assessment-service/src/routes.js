@@ -52,6 +52,16 @@ router.put("/assessments/:id", async (req, res) => {
   }
 });
 
+router.post("/assessments/:id/schedule", async (req, res) => {
+  try {
+    const scheduled = await commands.scheduleAssessment(req.params.id, req.body);
+    if (!scheduled) return res.status(404).json({ message: "Évaluation introuvable" });
+    res.json(scheduled);
+  } catch (error) {
+    handleCommandError(res, error);
+  }
+});
+
 router.post("/assessments/:id/publish", async (req, res) => {
   try {
     const published = await commands.publishAssessment(req.params.id);

@@ -50,6 +50,18 @@ describe("applyEvent", () => {
     assert.equal(state.status, "PUBLIEE");
   });
 
+  it("AssessmentScheduled passe le statut à PLANIFIEE avec la date de publication", () => {
+    const state = applyEvent(applyEvent(null, created), event("AssessmentScheduled", { datePublication: "2026-10-01T07:00:00Z" }));
+    assert.equal(state.status, "PLANIFIEE");
+    assert.equal(state.datePublication, "2026-10-01T07:00:00Z");
+  });
+
+  it("AssessmentClosingSoonNotified mémorise l'envoi du rappel de clôture", () => {
+    const state = applyEvent(applyEvent(null, created), event("AssessmentClosingSoonNotified", { notifiedAt: "2026-10-01T09:00:00Z" }));
+    assert.equal(state.closingSoonNotifiedAt, "2026-10-01T09:00:00Z");
+    assert.equal(state.status, "BROUILLON");
+  });
+
   it("AssessmentCancelled passe le statut à ANNULEE", () => {
     const state = applyEvent(applyEvent(null, created), event("AssessmentCancelled"));
     assert.equal(state.status, "ANNULEE");

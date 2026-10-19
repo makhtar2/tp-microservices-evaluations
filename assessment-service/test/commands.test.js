@@ -2,7 +2,14 @@ const { describe, it, beforeEach, afterEach, mock } = require("node:test");
 const assert = require("node:assert/strict");
 const AssessmentReadModel = require("../src/models/AssessmentReadModel");
 const eventStore = require("../src/eventStore");
-const { createAssessment, updateAssessment, publishAssessment, cancelAssessment, CommandError } = require("../src/commands");
+const {
+  createAssessment,
+  updateAssessment,
+  scheduleAssessment,
+  publishAssessment,
+  cancelAssessment,
+  CommandError,
+} = require("../src/commands");
 
 // MongoDB est simulé : le Read Model courant est `current`, et chaque
 // événement ajouté à l'Event Store est enregistré dans `appended`.
@@ -116,5 +123,55 @@ describe("cancelAssessment", () => {
     current = assessment({ status: "ANNULEE" });
     await assertCommandError(cancelAssessment("a"), 409);
     assert.equal(appended.length, 0);
+  });
+});
+
+describe("scheduleAssessment — planification de la publication", () => {
+  const NOW = new Date("2026-10-20T08:00:00Z");
+  const plusTard = "2026-10-21T08:00:00Z";
+
+  it("passe l'évaluation en PLANIFIEE avec sa date de publication", async () => {
+    current = assessment();
+    const state = await scheduleAssessment("a", { datePublication: plusTard }, NOW);
+    assert.equal(appended[0].type, "AssessmentScheduled");
+    assert.equal(state.status, "PLANIFIEE");
+    assert.equal(state.datePublication, "2026-10-21T08:00:00.000Z");
+  });
+
+  it("permet de replanifier une évaluation déjà planifiée", async () => {
+    current = assessment({ status: "PLANIFIEE", datePublication: plusTard });
+    const state = await scheduleAssessment("a", { datePublication: "2026-10-22T08:00:00Z" }, NOW);
+    assert.equal(state.datePublication, "2026-10-22T08:00:00.000Z");
+  });
+
+  it("exige une date valide dans le futur", async () => {
+    current = assessment();
+    await assertCommandError(scheduleAssessment("a", {}, NOW), 400);
+    await assertCommandError(scheduleAssessment("a", { datePublication: "demain" }, NOW), 400);
+    await assertCommandError(scheduleAssessment("a", { datePublication: "2026-10-19T08:00:00Z" }, NOW), 400);
+  });
+
+  it("exige une date de publication avant la date de fin", async () => {
+    current = assessment({ dateFin: "2026-10-21T00:00:00Z" });
+    await assertCommandError(scheduleAssessment("a", { datePublication: plusTard }, NOW), 400);
+  });
+
+  it("applique les mêmes règles que la publication (questions, barème)", async () => {
+    current = assessment({ questionIds: [] });
+    await assertCommandError(scheduleAssessment("a", { datePublication: plusTard }, NOW), 409);
+    current = assessment({ bareme: 0 });
+    await assertCommandError(scheduleAssessment("a", { datePublication: plusTard }, NOW), 409);
+  });
+
+  it("refuse de planifier une évaluation déjà publiée ou annulée", async () => {
+    for (const status of ["PUBLIEE", "ANNULEE"]) {
+      current = assessment({ status });
+      await assertCommandError(scheduleAssessment("a", { datePublication: plusTard }, NOW), 409);
+    }
+    assert.equal(appended.length, 0);
+  });
+
+  it("renvoie null pour une évaluation inconnue", async () => {
+    assert.equal(await scheduleAssessment("a", { datePublication: plusTard }, NOW), null);
   });
 });

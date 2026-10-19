@@ -26,8 +26,14 @@ function applyEvent(state, event) {
     case "AssessmentUpdated":
       return { ...state, ...payload };
 
+    case "AssessmentScheduled":
+      return { ...state, status: "PLANIFIEE", datePublication: payload.datePublication };
+
     case "AssessmentPublished":
       return { ...state, status: "PUBLIEE" };
+
+    case "AssessmentClosingSoonNotified":
+      return { ...state, closingSoonNotifiedAt: payload.notifiedAt };
 
     case "AssessmentCancelled":
       return { ...state, status: "ANNULEE" };
