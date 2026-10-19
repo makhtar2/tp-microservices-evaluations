@@ -7,12 +7,14 @@ import Questions from "./pages/Questions";
 import Assessments from "./pages/Assessments";
 import Results from "./pages/Results";
 import Login from "./pages/Login";
+import Grading from "./pages/Grading";
 import MyAssessments from "./pages/student/MyAssessments";
 import TakeAssessment from "./pages/student/TakeAssessment";
 import MyResults from "./pages/student/MyResults";
 
 const STAFF = ["ENSEIGNANT", "ADMINISTRATEUR"];
 const STUDENT = ["ETUDIANT"];
+const TEACHER = ["ENSEIGNANT"];
 
 function Home() {
   const { user } = useAuth();
@@ -32,6 +34,7 @@ export default function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/questions" element={<RequireAuth roles={STAFF}><Questions /></RequireAuth>} />
                 <Route path="/evaluations" element={<RequireAuth roles={STAFF}><Assessments /></RequireAuth>} />
+                <Route path="/correction" element={<RequireAuth roles={TEACHER}><Grading /></RequireAuth>} />
                 <Route path="/resultats" element={<RequireAuth roles={STAFF}><Results /></RequireAuth>} />
                 <Route path="/mes-evaluations" element={<RequireAuth roles={STUDENT}><MyAssessments /></RequireAuth>} />
                 <Route
