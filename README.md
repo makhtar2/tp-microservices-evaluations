@@ -77,6 +77,26 @@ cd question-service && node src/scripts/seed.js
 
 ## 5. Guide d'Installation et de Démarrage
 
+### Démarrage rapide : tout dans Docker
+
+```bash
+# 1. Infrastructure : RabbitMQ et les bases MongoDB (une par service)
+docker compose up -d --wait rabbitmq user-db question-db assessment-db submission-db grading-db notification-db
+
+# 2. Microservices, api-gateway et frontend
+docker compose up -d --build
+
+# 3. Comptes de démonstration et banque de questions
+docker compose exec user-service npm run seed
+docker compose exec question-service node src/scripts/seed.js
+```
+
+L'interface est sur [http://localhost:5173](http://localhost:5173) et la gateway sur `http://localhost:3000`.
+Démarrer l'infrastructure avant les services évite de saturer la mémoire : la stack complète compte 15 conteneurs.
+Si l'interface ne répond pas comme prévu, vérifier qu'aucun `npm run dev` local n'occupe déjà le port 5173.
+
+Pour lancer les services sans Docker, suivre les étapes ci-dessous.
+
 ### Étape 1 : Démarrer l'infrastructure partagée (RabbitMQ)
 ```bash
 docker compose up -d rabbitmq
