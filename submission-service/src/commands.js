@@ -1,7 +1,11 @@
 const mongoose = require("mongoose");
 const Submission = require("./models/Submission");
 const OpenAssessment = require("./models/OpenAssessment");
-const { publishSubmissionCompleted, publishSubmissionRejected } = require("./messaging/publisher");
+const {
+  publishSubmissionCompleted,
+  publishSubmissionRejected,
+  publishSubmissionReopened,
+} = require("./messaging/publisher");
 
 class CommandError extends Error {
   constructor(status, message) {
@@ -25,6 +29,12 @@ function ensureAccess(submission, caller = {}, { write = false } = {}) {
 
 function isPastDeadline(assessment, now = new Date()) {
   return Boolean(assessment && assessment.dateFin && now > assessment.dateFin);
+}
+
+// Date limite d'une copie : celle accordée lors d'une resoumission, sinon la
+// date de fin de l'évaluation.
+function deadlineOf(submission, assessment) {
+  return submission.resoumission?.dateLimite || assessment?.dateFin || null;
 }
 
 async function findSubmission(submissionId) {
@@ -87,7 +97,7 @@ async function loadModifiable(submissionId, caller) {
   }
 
   const assessment = await OpenAssessment.findById(submission.assessmentId).lean();
-  if (isPastDeadline(assessment)) {
+  if (isPastDeadline({ dateFin: deadlineOf(submission, assessment) })) {
     submission.status = "REFUSEE_HORS_DELAI";
     await submission.save();
     await publishSubmissionRejected(submission.toJSON(), "HORS_DELAI");
@@ -143,6 +153,48 @@ async function submit(submissionId, caller) {
   return submission;
 }
 
+// Règle métier 3 : l'enseignant responsable autorise une resoumission. La
+// copie (soumise ou refusée hors délai) redevient EN_COURS, avec ses réponses.
+// Si la date de fin de l'évaluation est passée, une nouvelle date limite
+// propre à cette copie est obligatoire. Impossible une fois le résultat publié.
+async function reopenSubmission(submissionId, { dateLimite, motif } = {}, caller = {}, now = new Date()) {
+  if (caller.role && caller.role !== "ENSEIGNANT") {
+    throw new CommandError(403, "Seul l'enseignant responsable peut autoriser une resoumission");
+  }
+  const submission = await findSubmission(submissionId);
+  if (!submission) return null;
+
+  const assessment = await OpenAssessment.findById(submission.assessmentId).lean();
+  if (caller.role && assessment?.enseignantId && caller.userId !== assessment.enseignantId) {
+    throw new CommandError(403, "Seul l'enseignant responsable peut autoriser une resoumission");
+  }
+  if (!["SOUMISE", "REFUSEE_HORS_DELAI"].includes(submission.status)) {
+    throw new CommandError(409, `Seule une copie soumise ou refusée peut être rouverte (statut ${submission.status})`);
+  }
+  if (submission.resultatPublieAt) {
+    throw new CommandError(409, "Le résultat de cette copie est déjà publié");
+  }
+
+  let limite = null;
+  if (dateLimite) {
+    limite = new Date(dateLimite);
+    if (Number.isNaN(limite.getTime()) || limite <= now) {
+      throw new CommandError(400, "dateLimite doit être une date ISO future");
+    }
+  } else if (isPastDeadline(assessment, now)) {
+    throw new CommandError(400, "La date de fin est dépassée : une nouvelle dateLimite est requise");
+  }
+
+  submission.status = "EN_COURS";
+  submission.soumiseAt = null;
+  submission.incidentCorrection = null;
+  submission.resoumission = { autoriseePar: caller.userId, autoriseeAt: now, dateLimite: limite, motif };
+  await submission.save();
+
+  await publishSubmissionReopened(submission.toJSON(), deadlineOf(submission, assessment));
+  return submission;
+}
+
 // Compensation (grading.failed) : la copie reste SOUMISE, l'étudiant n'a
 // rien à refaire, mais l'incident est visible pour lui et l'enseignant.
 async function recordGradingIncident({ submissionId, error }) {
@@ -180,4 +232,5 @@ module.exports = {
   saveAnswers,
   addFile,
   submit,
+  reopenSubmission,
 };

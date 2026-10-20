@@ -38,4 +38,17 @@ function publishSubmissionRejected(submission, motif) {
   });
 }
 
-module.exports = { publish, publishSubmissionCompleted, publishSubmissionRejected };
+// Resoumission autorisée par l'enseignant (règle métier 3) : grading-service
+// abandonne la correction en cours, notification-service prévient l'étudiant.
+function publishSubmissionReopened(submission, dateLimite) {
+  return publish("submission.reopened", {
+    submissionId: submission.id,
+    assessmentId: submission.assessmentId,
+    etudiantId: submission.etudiantId,
+    dateLimite: dateLimite || null,
+    motif: submission.resoumission?.motif || null,
+    occurredAt: new Date().toISOString(),
+  });
+}
+
+module.exports = { publish, publishSubmissionCompleted, publishSubmissionRejected, publishSubmissionReopened };
