@@ -17,10 +17,7 @@ export default function Results() {
   }, []);
 
   useEffect(() => {
-    if (!selectedId) {
-      setResults(null);
-      return;
-    }
+    if (!selectedId) return;
     getResults(selectedId).then(setResults).catch((err) => setError(err.message));
   }, [selectedId]);
 
@@ -38,7 +35,14 @@ export default function Results() {
         <CardHeader
           title="Choisir une évaluation"
           action={
-            <select className="field-input min-w-[220px]" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+            <select
+              className="field-input min-w-[220px]"
+              value={selectedId}
+              onChange={(e) => {
+                setResults(null);
+                setSelectedId(e.target.value);
+              }}
+            >
               <option value="">— Sélectionner —</option>
               {(assessments ?? []).map((a) => (
                 <option key={a._id} value={a._id}>
