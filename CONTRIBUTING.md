@@ -75,6 +75,9 @@ Responsables : El Hadji Fallou Bousso, Mame Bara Samb, Pape Makhtar Aidara
   (Admin/Enseignant/Étudiant) (fait)
 - `submission-service` : CRUD des soumissions/copies, consommation de
   `AssessmentPublished` (fait)
+- Resoumission autorisée par l'enseignant responsable (règle métier 3) :
+  `POST /submissions/:id/reopen`, événement `submission.reopened`, bouton
+  dans la page de correction (fait)
 - `grading-service` : correction automatique et manuelle, résultats,
   consommation de `SubmissionCompleted` (fait)
 - `notification-service` : consommation des événements métier
