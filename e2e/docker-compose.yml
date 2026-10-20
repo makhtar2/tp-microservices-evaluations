@@ -27,3 +27,6 @@ services:
       interval: 3s
       timeout: 5s
       retries: 30
+      # Sur une machine chargée, RabbitMQ met plus de 90 s à ouvrir le port :
+      # les échecs pendant cette période ne comptent pas.
+      start_period: 120s
