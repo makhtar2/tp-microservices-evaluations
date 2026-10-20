@@ -58,3 +58,15 @@ describe("consumer grading-service", () => {
     assert.deepEqual(acked, [msg]);
   });
 });
+
+describe("handleEvent", () => {
+  const { handleEvent, ROUTING_KEYS } = require("../src/messaging/consumer");
+
+  it("écoute la soumission et la réouverture des copies", () => {
+    assert.deepEqual(ROUTING_KEYS, ["submission.completed", "submission.reopened"]);
+  });
+
+  it("ignore un événement non géré", () => {
+    assert.equal(handleEvent("question.created", {}), null);
+  });
+});

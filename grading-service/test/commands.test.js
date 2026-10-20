@@ -4,6 +4,7 @@ const amqp = require("amqplib");
 const Grading = require("../src/models/Grading");
 const {
   gradeSubmission,
+  discardForResubmission,
   retryPending,
   retry,
   gradeQuestion,
@@ -283,5 +284,37 @@ describe("listPending", () => {
       "EN_ATTENTE",
       "ECHEC_CORRECTION",
     ]);
+  });
+});
+
+describe("discardForResubmission (réaction à SubmissionReopened)", () => {
+  beforeEach(async () => {
+    // Suppression simulée : respecte le filtre { _id, status: { $ne } }.
+    mock.method(Grading, "deleteOne", async ({ _id, status }) => {
+      const match = stored && stored._id === _id && stored.status !== status.$ne;
+      if (match) stored = null;
+      return { deletedCount: match ? 1 : 0 };
+    });
+    remote({ questionIds: ["q1", "q3"] });
+    await gradeSubmission(submission);
+  });
+
+  it("supprime la correction en cours pour que la nouvelle soumission soit corrigée", async () => {
+    assert.equal(await discardForResubmission({ submissionId: "sub-1" }), true);
+    assert.equal(stored, null);
+
+    const nouvelle = await gradeSubmission({ ...submission, reponses: [{ questionId: "q1", reponse: "B" }] });
+    assert.ok(nouvelle, "la nouvelle soumission ne doit pas être ignorée comme un doublon");
+    assert.equal(nouvelle.notes[0].note, 0);
+  });
+
+  it("ne supprime jamais une correction validée", async () => {
+    stored.status = "VALIDEE";
+    assert.equal(await discardForResubmission({ submissionId: "sub-1" }), false);
+    assert.equal(stored.status, "VALIDEE");
+  });
+
+  it("ignore une copie sans correction", async () => {
+    assert.equal(await discardForResubmission({ submissionId: "inconnue" }), false);
   });
 });
