@@ -5,13 +5,21 @@ function formatDate(value) {
   return value ? new Date(value).toLocaleString("fr-FR", { timeZone: "UTC" }) + " UTC" : "date non précisée";
 }
 
+// Période d'ouverture d'une évaluation, formulée selon les dates connues.
+function periode(dateDebut, dateFin) {
+  if (dateDebut && dateFin) return `Ouverte du ${formatDate(dateDebut)} au ${formatDate(dateFin)}.`;
+  if (dateFin) return `À rendre avant le ${formatDate(dateFin)}.`;
+  if (dateDebut) return `Ouverte à partir du ${formatDate(dateDebut)}, sans date limite.`;
+  return "Ouverte dès maintenant, sans date limite.";
+}
+
 const TEMPLATES = {
   "assessment.published": (e) => [
     {
       role: "ETUDIANT",
       type: "AssessmentPublished",
       titre: `Nouvelle évaluation : ${e.titre || e.assessmentId}`,
-      message: `Ouverte du ${formatDate(e.dateDebut)} au ${formatDate(e.dateFin)}.`,
+      message: periode(e.dateDebut, e.dateFin),
     },
   ],
   "assessment.closing_soon": (e) => [
