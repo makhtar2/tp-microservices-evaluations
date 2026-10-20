@@ -99,6 +99,27 @@ SubmissionCompleted → grading-service ──(échecs répétés)──▶ grad
         submission-service (incident)          notification-service
 ```
 
+**Resoumission autorisée** (règle métier 3) : l'enseignant responsable
+rouvre une copie soumise ou refusée hors délai
+(`POST /submissions/:id/reopen`, avec une date limite propre à la copie si
+l'évaluation est terminée). `submission-service` la repasse `EN_COURS` et
+publie `submission.reopened` : `grading-service` supprime la correction non
+validée (la nouvelle soumission en recrée une), `notification-service`
+prévient l'étudiant. `submission-service` connaît l'enseignant responsable
+par `assessment.published` et refuse la réouverture dès qu'il a reçu
+`result.published` pour la copie. `submission.reopened` et
+`submission.completed` arrivent sur la même queue de `grading-service`,
+donc dans l'ordre.
+
+```
+POST /reopen → submission-service ──▶ submission.reopened
+                                            │
+                       ┌────────────────────┤
+                       ▼                    ▼
+     grading-service (correction       notification-service
+     abandonnée)                       (prévient l'étudiant)
+```
+
 ## CQRS + Event Sourcing (assessment-service)
 
 ```mermaid
@@ -127,7 +148,8 @@ interopérables :
   - `assessment.published`, `assessment.closing_soon` — publiés par
     `assessment-service`
   - `submission.completed`, `submission.rejected` (copie refusée hors
-    délai, règle métier 2) — publiés par `submission-service`
+    délai, règle métier 2), `submission.reopened` (resoumission autorisée,
+    règle métier 3) — publiés par `submission-service`
   - `grading.completed`, `result.published`, `grading.failed`
     (compensation) — publiés par `grading-service`
 - **Payload** : JSON, contient toujours `assessmentId` et, le cas échéant,
