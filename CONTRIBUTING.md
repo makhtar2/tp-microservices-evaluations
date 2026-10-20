@@ -89,7 +89,8 @@ Responsables : El Hadji Fallou Bousso, Mame Bara Samb, Pape Makhtar Aidara
   compensation (relance, `grading.failed`, refus hors délai) et files
   dead-letters (fait, voir `docs/architecture.md`)
 - Tests bout-en-bout des scénarios d'échec et tests unitaires de chaque
-  service, CI GitHub Actions (fait, voir `e2e/` et README)
+  service (fait, exécution locale via `e2e/` et le README ; la CI GitHub
+  Actions est désactivée)
 
 ### Toute l'équipe (tâches transverses)
 - Contrats OpenAPI (`docs/openapi/*.yaml`)

@@ -247,8 +247,8 @@ cd e2e && npm run test:unit      # tous les services, avec récapitulatif
 | `grading-service` | Correction automatique par type de question, correction manuelle, validation, relance et abandon (`grading.failed`), correction abandonnée lors d'une resoumission |
 | `notification-service` | Notifications produites pour chaque événement métier, refus de dépôt, échec de correction et resoumission |
 
-Ces tests tournent aussi sur GitHub Actions à chaque push sur `main` et à
-chaque pull request (`.github/workflows/tests.yml`).
+La CI GitHub Actions est désactivée dans ce dépôt. La validation se fait
+localement avec `npm run test:unit` avant chaque commit ou pull request.
 
 ### Tests bout-en-bout (E2E)
 
