@@ -127,3 +127,24 @@ describe("buildNotifications", () => {
     assert.equal(n.message, "Votre note : 0.");
   });
 });
+
+describe("submission.reopened", () => {
+  it("prévient l'étudiant avec la nouvelle date limite et le motif", () => {
+    const [n] = buildNotifications("submission.reopened", {
+      assessmentId: "a",
+      etudiantId: "e1",
+      dateLimite: "2026-10-01T10:00:00.000Z",
+      motif: "Fichier oublié",
+    });
+    assert.equal(n.userId, "e1");
+    assert.equal(n.type, "SubmissionReopened");
+    assert.equal(n.titre, "Resoumission autorisée");
+    assert.match(n.message, /avant le 01\/10\/2026 10:00:00 UTC\./);
+    assert.match(n.message, /Motif : Fichier oublié$/);
+  });
+
+  it("reste lisible sans date limite ni motif", () => {
+    const [n] = buildNotifications("submission.reopened", { assessmentId: "a", etudiantId: "e1" });
+    assert.equal(n.message, "Votre enseignant a rouvert votre copie : vous pouvez la modifier et la soumettre à nouveau.");
+  });
+});
