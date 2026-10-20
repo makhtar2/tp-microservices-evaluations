@@ -99,4 +99,16 @@ router.post("/submissions/:id/submit", async (req, res) => {
   }
 });
 
+// Resoumission autorisée par l'enseignant responsable : { dateLimite?, motif? }.
+router.post("/submissions/:id/reopen", async (req, res) => {
+  try {
+    const { dateLimite, motif } = req.body || {};
+    const submission = await commands.reopenSubmission(req.params.id, { dateLimite, motif }, caller(req));
+    if (!submission) return res.status(404).json(NOT_FOUND);
+    res.json(submission);
+  } catch (error) {
+    handleCommandError(res, error);
+  }
+});
+
 module.exports = router;
