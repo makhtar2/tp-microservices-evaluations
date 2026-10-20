@@ -7,7 +7,7 @@ import StateBlock from "../components/ui/StateBlock";
 import { listPending, getGrading, gradeQuestion, validateGrading, retryGrading } from "../api/gradings";
 import { getQuestion } from "../api/questions";
 import { listAssessments } from "../api/assessments";
-import { reopenSubmission } from "../api/submissions";
+import { listSubmissions, reopenSubmission } from "../api/submissions";
 import { useAuth } from "../auth/useAuth";
 import { useStudentNames } from "../hooks/useStudentNames";
 import { QUESTION_TYPE_LABELS, formatDateTime } from "../constants/assessment";
@@ -153,6 +153,8 @@ export default function Grading() {
   const { user } = useAuth();
   const studentName = useStudentNames();
   const [pending, setPending] = useState(null);
+  const [refused, setRefused] = useState([]);
+  const [selectedRefused, setSelectedRefused] = useState(null);
   const [assessments, setAssessments] = useState({});
   const [selectedId, setSelectedId] = useState(null);
   const [grading, setGrading] = useState(null);
@@ -165,10 +167,13 @@ export default function Grading() {
     try {
       // Copies de l'enseignant à corriger, et corrections automatiques à
       // relancer (leur enseignant n'est connu qu'une fois l'évaluation lue).
-      const [mine, withFailed, list] = await Promise.all([
+      // Les copies refusées hors délai n'arrivent jamais en correction :
+      // elles sont listées à part pour pouvoir autoriser une resoumission.
+      const [mine, withFailed, list, late] = await Promise.all([
         listPending({ enseignantId: user.id }),
         listPending({ includeFailed: true }),
         listAssessments({ enseignantId: user.id }),
+        listSubmissions({ status: "REFUSEE_HORS_DELAI" }),
       ]);
       const ownAssessments = Object.fromEntries(list.map((a) => [a._id, a]));
       const failed = withFailed.filter(
@@ -176,6 +181,7 @@ export default function Grading() {
       );
       setAssessments(ownAssessments);
       setPending([...failed, ...mine]);
+      setRefused(late.filter((s) => ownAssessments[s.assessmentId]));
     } catch (err) {
       setError(err.message);
     }
@@ -186,7 +192,16 @@ export default function Grading() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function selectRefused(submission) {
+    setSelectedId(null);
+    setGrading(null);
+    setSelectedRefused(submission);
+    setError(null);
+    setNotice(null);
+  }
+
   async function select(submissionId) {
+    setSelectedRefused(null);
     setSelectedId(submissionId);
     setGrading(null);
     setError(null);
@@ -240,7 +255,9 @@ export default function Grading() {
       // retire tout de suite de la liste plutôt que de la recharger.
       setSelectedId(null);
       setGrading(null);
+      setSelectedRefused(null);
       setPending((list) => list.filter((g) => g.submissionId !== submissionId));
+      setRefused((list) => list.filter((s) => s.id !== submissionId));
       setNotice(`Copie rouverte : ${studentName(etudiantId)} peut la modifier et la soumettre à nouveau.`);
     } catch (err) {
       setError(err.message);
@@ -266,30 +283,76 @@ export default function Grading() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5 items-start">
-        <Card>
-          <CardHeader title="Copies en attente" subtitle={pending ? `${pending.length} copie(s)` : ""} />
-          {pending === null && !error && <StateBlock title="Chargement…" />}
-          {pending && pending.length === 0 && <StateBlock title="Aucune copie à corriger" />}
-          <div className="flex flex-col gap-1.5">
-            {(pending ?? []).map((g) => (
-              <button
-                key={g.submissionId}
-                type="button"
-                onClick={() => select(g.submissionId)}
-                className={`text-left rounded-xl px-3 py-2.5 transition-colors ${
-                  selectedId === g.submissionId ? "bg-accent-soft" : "hover:bg-shell"
-                }`}
-              >
-                <strong className="block text-[13px]">{assessments[g.assessmentId]?.titre ?? g.assessmentId}</strong>
-                <span className="text-xs text-ink-muted block mb-1">{studentName(g.etudiantId)}</span>
-                <Badge tone={GRADING_STATUS[g.status]?.tone}>{GRADING_STATUS[g.status]?.label ?? g.status}</Badge>
-              </button>
-            ))}
-          </div>
-        </Card>
+        <div className="flex flex-col gap-5">
+          <Card>
+            <CardHeader title="Copies en attente" subtitle={pending ? `${pending.length} copie(s)` : ""} />
+            {pending === null && !error && <StateBlock title="Chargement…" />}
+            {pending && pending.length === 0 && <StateBlock title="Aucune copie à corriger" />}
+            <div className="flex flex-col gap-1.5">
+              {(pending ?? []).map((g) => (
+                <button
+                  key={g.submissionId}
+                  type="button"
+                  onClick={() => select(g.submissionId)}
+                  className={`text-left rounded-xl px-3 py-2.5 transition-colors ${
+                    selectedId === g.submissionId ? "bg-accent-soft" : "hover:bg-shell"
+                  }`}
+                >
+                  <strong className="block text-[13px]">{assessments[g.assessmentId]?.titre ?? g.assessmentId}</strong>
+                  <span className="text-xs text-ink-muted block mb-1">{studentName(g.etudiantId)}</span>
+                  <Badge tone={GRADING_STATUS[g.status]?.tone}>{GRADING_STATUS[g.status]?.label ?? g.status}</Badge>
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          {refused.length > 0 && (
+            <Card>
+              <CardHeader title="Copies refusées hors délai" subtitle={`${refused.length} copie(s)`} />
+              <div className="flex flex-col gap-1.5">
+                {refused.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => selectRefused(s)}
+                    className={`text-left rounded-xl px-3 py-2.5 transition-colors ${
+                      selectedRefused?.id === s.id ? "bg-accent-soft" : "hover:bg-shell"
+                    }`}
+                  >
+                    <strong className="block text-[13px]">{assessments[s.assessmentId]?.titre ?? s.assessmentId}</strong>
+                    <span className="text-xs text-ink-muted block mb-1">{studentName(s.etudiantId)}</span>
+                    <Badge tone="danger">Refusée hors délai</Badge>
+                  </button>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
 
         <Card>
-          {!selectedId && <StateBlock title="Sélectionnez une copie" hint="Choisissez une copie dans la liste." />}
+          {selectedRefused && (
+            <>
+              <CardHeader
+                title={assessments[selectedRefused.assessmentId]?.titre ?? "Copie"}
+                subtitle={studentName(selectedRefused.etudiantId)}
+                action={<Badge tone="danger">Refusée hors délai</Badge>}
+              />
+              <p className="text-sm text-ink-muted mb-4">
+                Refusée automatiquement le {formatDateTime(selectedRefused.updatedAt)} : la date limite était
+                dépassée. {selectedRefused.reponses.length} réponse(s) et {selectedRefused.fichiers.length} fichier(s)
+                enregistrés.
+              </p>
+              <ReopenForm
+                key={selectedRefused.id}
+                dateFin={assessments[selectedRefused.assessmentId]?.dateFin}
+                onReopen={(values) => handleReopen(selectedRefused.id, selectedRefused.etudiantId, values)}
+                disabled={busy}
+              />
+            </>
+          )}
+          {!selectedId && !selectedRefused && (
+            <StateBlock title="Sélectionnez une copie" hint="Choisissez une copie dans la liste." />
+          )}
           {selectedId && !grading && !error && <StateBlock title="Chargement…" />}
           {grading && (
             <>
