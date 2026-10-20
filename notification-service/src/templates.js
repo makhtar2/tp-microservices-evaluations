@@ -5,13 +5,21 @@ function formatDate(value) {
   return value ? new Date(value).toLocaleString("fr-FR", { timeZone: "UTC" }) + " UTC" : "date non précisée";
 }
 
+// Période d'ouverture d'une évaluation, formulée selon les dates connues.
+function periode(dateDebut, dateFin) {
+  if (dateDebut && dateFin) return `Ouverte du ${formatDate(dateDebut)} au ${formatDate(dateFin)}.`;
+  if (dateFin) return `À rendre avant le ${formatDate(dateFin)}.`;
+  if (dateDebut) return `Ouverte à partir du ${formatDate(dateDebut)}, sans date limite.`;
+  return "Ouverte dès maintenant, sans date limite.";
+}
+
 const TEMPLATES = {
   "assessment.published": (e) => [
     {
       role: "ETUDIANT",
       type: "AssessmentPublished",
       titre: `Nouvelle évaluation : ${e.titre || e.assessmentId}`,
-      message: `Ouverte du ${formatDate(e.dateDebut)} au ${formatDate(e.dateFin)}.`,
+      message: periode(e.dateDebut, e.dateFin),
     },
   ],
   "assessment.closing_soon": (e) => [
@@ -30,12 +38,46 @@ const TEMPLATES = {
       message: `Votre copie a bien été reçue le ${formatDate(e.soumiseAt)}.`,
     },
   ],
+  "submission.rejected": (e) => [
+    {
+      userId: e.etudiantId,
+      type: "SubmissionRejected",
+      titre: "Dépôt refusé",
+      message: "La date limite de l'évaluation est dépassée : votre copie n'a pas pu être déposée.",
+    },
+  ],
+  "submission.reopened": (e) => [
+    {
+      userId: e.etudiantId,
+      type: "SubmissionReopened",
+      titre: "Resoumission autorisée",
+      message:
+        `Votre enseignant a rouvert votre copie : vous pouvez la modifier et la soumettre à nouveau` +
+        (e.dateLimite ? ` avant le ${formatDate(e.dateLimite)}.` : ".") +
+        (e.motif ? ` Motif : ${e.motif}` : ""),
+    },
+  ],
   "grading.completed": (e) => [
     {
       userId: e.etudiantId,
       type: "GradingCompleted",
       titre: "Copie corrigée",
       message: "La correction de votre copie est terminée. Le résultat sera visible dès sa publication.",
+    },
+  ],
+  "grading.failed": (e) => [
+    {
+      userId: e.etudiantId,
+      type: "GradingFailed",
+      titre: "Correction retardée",
+      message: "Votre copie a bien été reçue, mais sa correction automatique a échoué. Votre enseignant a été prévenu.",
+    },
+    {
+      userId: e.enseignantId,
+      role: e.enseignantId ? undefined : "ENSEIGNANT",
+      type: "GradingFailed",
+      titre: "Correction automatique en échec",
+      message: `La copie ${e.submissionId} n'a pas pu être corrigée automatiquement (${e.error || "erreur inconnue"}). Relancez-la depuis la page Correction.`,
     },
   ],
   "result.published": (e) => [

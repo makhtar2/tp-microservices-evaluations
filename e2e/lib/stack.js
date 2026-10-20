@@ -35,7 +35,13 @@ const SERVICES = {
   "question-service": { port: PORTS.question, env: { MONGO_URI: MONGO("question"), GRPC_PORT } },
   "assessment-service": {
     port: PORTS.assessment,
-    env: { MONGO_URI: MONGO("assessment"), QUESTION_SERVICE_GRPC_URL: `127.0.0.1:${GRPC_PORT}`, RABBITMQ_URL },
+    env: {
+      MONGO_URI: MONGO("assessment"),
+      QUESTION_SERVICE_GRPC_URL: `127.0.0.1:${GRPC_PORT}`,
+      RABBITMQ_URL,
+      // Publication planifiée vérifiée en quelques secondes.
+      SCHEDULER_INTERVAL_MS: 1000,
+    },
     subscribes: true,
   },
   "submission-service": {

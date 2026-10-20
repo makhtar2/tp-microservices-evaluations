@@ -1,9 +1,11 @@
 const Grading = require("./models/Grading");
 const { gradeAnswer } = require("./autoGrader");
 const { getAssessment, getQuestion } = require("./clients");
-const { publishGradingCompleted, publishResultPublished } = require("./messaging/publisher");
+const { publishGradingCompleted, publishResultPublished, publishGradingFailed } = require("./messaging/publisher");
 
 const PENDING_STATUSES = ["CORRECTION_AUTO_PARTIELLE", "EN_CORRECTION_MANUELLE"];
+// Nombre de tentatives de correction automatique avant compensation.
+const MAX_ATTEMPTS = Number(process.env.GRADING_MAX_ATTEMPTS) || 5;
 
 class CommandError extends Error {
   constructor(status, message) {
@@ -12,19 +14,17 @@ class CommandError extends Error {
   }
 }
 
-// Réaction à SubmissionCompleted : crée la correction et note
-// automatiquement les questions QCM / Vrai-Faux / réponse courte.
-// Idempotent : un événement rejoué pour une copie déjà reçue est ignoré.
-// Si un service distant est indisponible, la copie reste EN_ATTENTE avec
-// l'erreur (reprise à traiter par la compensation de la Saga).
-async function gradeSubmission({ submissionId, assessmentId, etudiantId, reponses = [] }) {
-  if (await Grading.exists({ _id: submissionId })) return null;
-
-  const grading = new Grading({ _id: submissionId, assessmentId, etudiantId });
+// Note automatiquement les questions QCM / Vrai-Faux / réponse courte à
+// partir des réponses conservées sur la correction. En cas d'échec (service
+// distant indisponible), la copie reste EN_ATTENTE avec l'erreur et sera
+// relancée par retryPending ; après MAX_ATTEMPTS échecs, elle passe en
+// ECHEC_CORRECTION et grading.failed est publié (compensation de la Saga).
+async function autoGrade(grading) {
+  grading.attempts = (grading.attempts || 0) + 1;
   try {
-    const assessment = await getAssessment(assessmentId);
+    const assessment = await getAssessment(grading.assessmentId);
     const questions = await Promise.all((assessment.questionIds || []).map(getQuestion));
-    const byQuestion = new Map(reponses.map((r) => [r.questionId, r.reponse]));
+    const byQuestion = new Map(grading.reponses.map((r) => [r.questionId, r.reponse]));
 
     grading.enseignantId = assessment.enseignantId;
     grading.notes = questions.map((question) => {
@@ -42,21 +42,64 @@ async function gradeSubmission({ submissionId, assessmentId, etudiantId, reponse
     grading.recomputeScore();
     // Aucune question manuelle : la copie attend seulement la validation.
     grading.status = grading.notes.some((n) => n.note === null) ? "CORRECTION_AUTO_PARTIELLE" : "EN_CORRECTION_MANUELLE";
+    grading.lastError = undefined;
   } catch (err) {
-    grading.status = "EN_ATTENTE";
     grading.lastError = err.message;
-    console.error(`[grading-service] Correction automatique impossible pour ${submissionId} :`, err.message);
+    grading.status = grading.attempts >= MAX_ATTEMPTS ? "ECHEC_CORRECTION" : "EN_ATTENTE";
+    console.error(
+      `[grading-service] Correction automatique impossible pour ${grading._id} (tentative ${grading.attempts}/${MAX_ATTEMPTS}) :`,
+      err.message
+    );
   }
 
-  return grading.save();
+  await grading.save();
+  if (grading.status === "ECHEC_CORRECTION") {
+    await publishGradingFailed(grading.toJSON());
+  }
+  return grading;
+}
+
+// Réaction à SubmissionCompleted : crée la correction puis tente la
+// correction automatique. Idempotent : un événement rejoué pour une copie
+// déjà reçue est ignoré.
+async function gradeSubmission({ submissionId, assessmentId, etudiantId, reponses = [] }) {
+  if (await Grading.exists({ _id: submissionId })) return null;
+
+  const grading = new Grading({ _id: submissionId, assessmentId, etudiantId, reponses });
+  return autoGrade(grading);
+}
+
+// Relance périodique des corrections restées EN_ATTENTE.
+async function retryPending() {
+  const waiting = await Grading.find({ status: "EN_ATTENTE" });
+  const results = [];
+  for (const grading of waiting) {
+    results.push(await autoGrade(grading));
+  }
+  return results;
+}
+
+// Relance manuelle par l'enseignant d'une correction abandonnée
+// (ECHEC_CORRECTION) ou en attente : le compteur de tentatives repart à 0.
+async function retry(submissionId) {
+  const grading = await Grading.findById(submissionId);
+  if (!grading) return null;
+  if (!["EN_ATTENTE", "ECHEC_CORRECTION"].includes(grading.status)) {
+    throw new CommandError(409, "La correction automatique a déjà été effectuée");
+  }
+  grading.attempts = 0;
+  return autoGrade(grading);
 }
 
 async function findGrading(submissionId) {
   return Grading.findById(submissionId);
 }
 
-async function listPending({ assessmentId, enseignantId }) {
-  const filter = { status: { $in: PENDING_STATUSES } };
+// `includeFailed` ajoute les copies dont la correction automatique est en
+// attente ou abandonnée, pour que l'enseignant puisse la relancer.
+async function listPending({ assessmentId, enseignantId, includeFailed = false }) {
+  const statuses = includeFailed ? [...PENDING_STATUSES, "EN_ATTENTE", "ECHEC_CORRECTION"] : PENDING_STATUSES;
+  const filter = { status: { $in: statuses } };
   if (assessmentId) filter.assessmentId = assessmentId;
   if (enseignantId) filter.enseignantId = enseignantId;
   return Grading.find(filter).sort({ createdAt: 1 });
@@ -66,7 +109,7 @@ function ensureEditable(grading, userId) {
   if (grading.status === "VALIDEE") {
     throw new CommandError(409, "La correction est déjà validée");
   }
-  if (grading.status === "EN_ATTENTE") {
+  if (grading.status === "EN_ATTENTE" || grading.status === "ECHEC_CORRECTION") {
     throw new CommandError(409, "La correction automatique n'a pas encore été effectuée");
   }
   // Contrôle d'habilitation : actif dès qu'un appelant est identifié
@@ -117,4 +160,23 @@ async function validate(submissionId, userId) {
   return grading;
 }
 
-module.exports = { CommandError, gradeSubmission, findGrading, listPending, gradeQuestion, validate };
+// Réaction à SubmissionReopened (resoumission autorisée par l'enseignant) :
+// la correction en cours est abandonnée ; la nouvelle soumission en créera
+// une autre. Une correction déjà validée n'est jamais supprimée.
+async function discardForResubmission({ submissionId }) {
+  const { deletedCount } = await Grading.deleteOne({ _id: submissionId, status: { $ne: "VALIDEE" } });
+  return deletedCount > 0;
+}
+
+module.exports = {
+  CommandError,
+  MAX_ATTEMPTS,
+  gradeSubmission,
+  discardForResubmission,
+  retryPending,
+  retry,
+  findGrading,
+  listPending,
+  gradeQuestion,
+  validate,
+};

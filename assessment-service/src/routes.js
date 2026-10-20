@@ -5,6 +5,11 @@ const { rebuildReadModel } = require("./projectionUpdater");
 
 const router = Router();
 
+// Identité vérifiée par l'api-gateway (absente pour un appel interne).
+function caller(req) {
+  return { userId: req.get("x-user-id"), role: req.get("x-user-role") };
+}
+
 function handleCommandError(res, error) {
   if (error instanceof commands.CommandError) {
     return res.status(error.status).json({ message: error.message });
@@ -15,13 +20,16 @@ function handleCommandError(res, error) {
 
 router.get("/assessments", async (req, res) => {
   const { enseignantId, status } = req.query;
-  const assessments = await queries.listAssessments({ enseignantId, status });
+  const assessments = await queries.listAssessments({ enseignantId, status, role: caller(req).role });
   res.json(assessments);
 });
 
 router.post("/assessments", async (req, res) => {
   try {
-    const assessment = await commands.createAssessment(req.body);
+    // L'enseignant responsable est celui qui crée l'évaluation, pas un
+    // identifiant choisi dans le corps de la requête.
+    const { userId } = caller(req);
+    const assessment = await commands.createAssessment(userId ? { ...req.body, enseignantId: userId } : req.body);
     res.status(201).json(assessment);
   } catch (error) {
     handleCommandError(res, error);
@@ -29,7 +37,7 @@ router.post("/assessments", async (req, res) => {
 });
 
 router.get("/assessments/:id", async (req, res) => {
-  const assessment = await queries.getAssessment(req.params.id);
+  const assessment = await queries.getAssessment(req.params.id, caller(req));
   if (!assessment) return res.status(404).json({ message: "Évaluation introuvable" });
   res.json(assessment);
 });
@@ -39,6 +47,16 @@ router.put("/assessments/:id", async (req, res) => {
     const updated = await commands.updateAssessment(req.params.id, req.body);
     if (!updated) return res.status(404).json({ message: "Évaluation introuvable" });
     res.json(updated);
+  } catch (error) {
+    handleCommandError(res, error);
+  }
+});
+
+router.post("/assessments/:id/schedule", async (req, res) => {
+  try {
+    const scheduled = await commands.scheduleAssessment(req.params.id, req.body);
+    if (!scheduled) return res.status(404).json({ message: "Évaluation introuvable" });
+    res.json(scheduled);
   } catch (error) {
     handleCommandError(res, error);
   }
@@ -74,7 +92,7 @@ router.post("/assessments/:id/rebuild", async (req, res) => {
 });
 
 router.get("/assessments/:id/results", async (req, res) => {
-  const results = await queries.getResults(req.params.id);
+  const results = await queries.getResults(req.params.id, caller(req));
   if (!results) return res.status(404).json({ message: "Évaluation introuvable" });
   res.json(results);
 });

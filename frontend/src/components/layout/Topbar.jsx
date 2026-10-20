@@ -1,6 +1,11 @@
-import { Search, Bell, ChevronDown } from "lucide-react";
+import { useAuth } from "../../auth/useAuth";
 
-export default function Topbar({ user }) {
+const ROLE_LABELS = { ADMINISTRATEUR: "Administrateur", ENSEIGNANT: "Enseignant", ETUDIANT: "Étudiant" };
+
+export default function Topbar() {
+  const { user } = useAuth();
+  const initials = `${user.prenom?.[0] ?? ""}${user.nom?.[0] ?? ""}`.toUpperCase() || "?";
+
   return (
     <header className="pill-surface flex items-center justify-between gap-6 py-2 pl-4 pr-3">
       <div className="flex items-center gap-2 flex-shrink-0">
@@ -11,21 +16,14 @@ export default function Topbar({ user }) {
         <span className="font-extrabold text-lg tracking-tight text-primary">Evalio</span>
       </div>
 
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <button type="button" className="icon-btn" aria-label="Rechercher">
-          <Search size={18} />
-        </button>
-        <button type="button" className="icon-btn" aria-label="Notifications">
-          <Bell size={18} />
-          <span className="absolute top-[9px] right-2.5 w-[7px] h-[7px] rounded-full bg-accent border-2 border-card" />
-        </button>
-        <button type="button" className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full bg-shell text-ink cursor-pointer">
-          <span className="flex items-center justify-center w-[30px] h-[30px] rounded-full bg-primary text-white text-xs font-bold">
-            {user?.initials ?? "EN"}
-          </span>
-          <span className="text-sm font-medium">{user?.name ?? "Enseignant"}</span>
-          <ChevronDown size={16} />
-        </button>
+      <div className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full bg-shell text-ink">
+        <span className="flex items-center justify-center w-[30px] h-[30px] rounded-full bg-primary text-white text-xs font-bold">
+          {initials}
+        </span>
+        <span className="text-sm font-medium">
+          {user.prenom} {user.nom}
+        </span>
+        <span className="text-xs text-ink-muted">· {ROLE_LABELS[user.role] ?? user.role}</span>
       </div>
     </header>
   );

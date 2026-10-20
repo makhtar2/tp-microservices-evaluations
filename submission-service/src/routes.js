@@ -8,6 +8,11 @@ const { SUBMISSION_STATUSES } = require("./models/Submission");
 const router = Router();
 const NOT_FOUND = { message: "Soumission introuvable" };
 
+// Identité vérifiée par l'api-gateway (absente pour un appel interne).
+function caller(req) {
+  return { userId: req.get("x-user-id"), role: req.get("x-user-role") };
+}
+
 function handleCommandError(res, error) {
   if (error instanceof commands.CommandError) {
     return res.status(error.status).json({ message: error.message });
@@ -17,7 +22,10 @@ function handleCommandError(res, error) {
 }
 
 router.get("/submissions", async (req, res) => {
-  const { assessmentId, etudiantId, status } = req.query;
+  const { assessmentId, status } = req.query;
+  const { userId, role } = caller(req);
+  // Un étudiant ne liste que ses propres copies.
+  const etudiantId = role === "ETUDIANT" ? userId : req.query.etudiantId;
   if (status && !SUBMISSION_STATUSES.includes(status)) {
     return res.status(400).json({ message: `status doit valoir ${SUBMISSION_STATUSES.join(", ")}` });
   }
@@ -27,7 +35,7 @@ router.get("/submissions", async (req, res) => {
 
 router.post("/submissions", async (req, res) => {
   try {
-    const submission = await commands.openSubmission(req.body);
+    const submission = await commands.openSubmission(req.body, caller(req));
     res.status(201).json(submission);
   } catch (error) {
     handleCommandError(res, error);
@@ -35,14 +43,19 @@ router.post("/submissions", async (req, res) => {
 });
 
 router.get("/submissions/:id", async (req, res) => {
-  const submission = await commands.findSubmission(req.params.id);
-  if (!submission) return res.status(404).json(NOT_FOUND);
-  res.json(submission);
+  try {
+    const submission = await commands.findSubmission(req.params.id);
+    if (!submission) return res.status(404).json(NOT_FOUND);
+    commands.ensureAccess(submission, caller(req));
+    res.json(submission);
+  } catch (error) {
+    handleCommandError(res, error);
+  }
 });
 
 router.put("/submissions/:id/answers", async (req, res) => {
   try {
-    const submission = await commands.saveAnswers(req.params.id, req.body.reponses);
+    const submission = await commands.saveAnswers(req.params.id, req.body.reponses, caller(req));
     if (!submission) return res.status(404).json(NOT_FOUND);
     res.json(submission);
   } catch (error) {
@@ -62,7 +75,7 @@ router.post("/submissions/:id/files", (req, res) => {
     if (uploadError) return handleCommandError(res, uploadError);
 
     try {
-      const fichier = await commands.addFile(req.params.id, req.file);
+      const fichier = await commands.addFile(req.params.id, req.file, caller(req));
       if (!fichier) {
         if (req.file) fs.rmSync(req.file.path, { force: true });
         return res.status(404).json(NOT_FOUND);
@@ -78,7 +91,19 @@ router.post("/submissions/:id/files", (req, res) => {
 
 router.post("/submissions/:id/submit", async (req, res) => {
   try {
-    const submission = await commands.submit(req.params.id);
+    const submission = await commands.submit(req.params.id, caller(req));
+    if (!submission) return res.status(404).json(NOT_FOUND);
+    res.json(submission);
+  } catch (error) {
+    handleCommandError(res, error);
+  }
+});
+
+// Resoumission autorisée par l'enseignant responsable : { dateLimite?, motif? }.
+router.post("/submissions/:id/reopen", async (req, res) => {
+  try {
+    const { dateLimite, motif } = req.body || {};
+    const submission = await commands.reopenSubmission(req.params.id, { dateLimite, motif }, caller(req));
     if (!submission) return res.status(404).json(NOT_FOUND);
     res.json(submission);
   } catch (error) {

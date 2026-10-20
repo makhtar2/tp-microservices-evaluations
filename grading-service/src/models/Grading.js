@@ -1,7 +1,15 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-const GRADING_STATUSES = ["EN_ATTENTE", "CORRECTION_AUTO_PARTIELLE", "EN_CORRECTION_MANUELLE", "VALIDEE"];
+// EN_ATTENTE : correction automatique pas encore faite (ou à relancer) ;
+// ECHEC_CORRECTION : abandonnée après MAX_ATTEMPTS échecs (compensation).
+const GRADING_STATUSES = [
+  "EN_ATTENTE",
+  "CORRECTION_AUTO_PARTIELLE",
+  "EN_CORRECTION_MANUELLE",
+  "VALIDEE",
+  "ECHEC_CORRECTION",
+];
 
 // Une entrée par question de l'évaluation. `note` reste null tant que la
 // question (ouverte) n'a pas été corrigée manuellement.
@@ -24,10 +32,14 @@ const gradingSchema = new Schema(
     assessmentId: { type: String, required: true, index: true },
     etudiantId: { type: String, required: true },
     enseignantId: { type: String, index: true },
+    // Réponses reçues avec SubmissionCompleted, conservées pour pouvoir
+    // relancer la correction automatique sans rappeler submission-service.
+    reponses: { type: [{ _id: false, questionId: String, reponse: String }], default: [] },
     notes: { type: [questionNoteSchema], default: [] },
     scoreTotal: { type: Number, default: 0 },
     status: { type: String, enum: GRADING_STATUSES, default: "EN_ATTENTE", index: true },
     lastError: { type: String },
+    attempts: { type: Number, default: 0 },
     validatedAt: { type: Date, default: null },
   },
   { timestamps: true, _id: false }

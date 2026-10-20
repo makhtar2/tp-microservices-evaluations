@@ -47,7 +47,7 @@ Chaque service dispose d'un modèle `.env.example`. Voici la synthèse des ports
 | **submission-service** | `PORT` | `3004` | `MONGO_URI=mongodb://127.0.0.1:27017/submission_service`<br>`RABBITMQ_URL=amqp://localhost:5672` |
 | **grading-service** | `PORT` | `3005` | `MONGO_URI=mongodb://127.0.0.1:27017/grading_service`<br>`RABBITMQ_URL=amqp://localhost:5672`<br>`ASSESSMENT_SERVICE_URL=http://localhost:3003`<br>`QUESTION_SERVICE_URL=http://localhost:3002` |
 | **notification-service** | *Aucun* | - | `MONGO_URI=mongodb://127.0.0.1:27017/notification_service`<br>`RABBITMQ_URL=amqp://localhost:5672` |
-| **frontend** | `server.port` | `5173` | Proxifie vers `http://localhost:3002` et `http://localhost:3003` (ou Gateway `3000`) |
+| **frontend** | - | `5173` | `API_URL=http://localhost:3000` : toutes les requêtes `/api/*` passent par l'api-gateway (`http://api-gateway:3000` dans docker compose) |
 
 ---
 
@@ -76,6 +76,26 @@ cd question-service && node src/scripts/seed.js
 ---
 
 ## 5. Guide d'Installation et de Démarrage
+
+### Démarrage rapide : tout dans Docker
+
+```bash
+# 1. Infrastructure : RabbitMQ et les bases MongoDB (une par service)
+docker compose up -d --wait rabbitmq user-db question-db assessment-db submission-db grading-db notification-db
+
+# 2. Microservices, api-gateway et frontend
+docker compose up -d --build
+
+# 3. Comptes de démonstration et banque de questions
+docker compose exec user-service npm run seed
+docker compose exec question-service node src/scripts/seed.js
+```
+
+L'interface est sur [http://localhost:5173](http://localhost:5173) et la gateway sur `http://localhost:3000`.
+Démarrer l'infrastructure avant les services évite de saturer la mémoire : la stack complète compte 15 conteneurs.
+Si l'interface ne répond pas comme prévu, vérifier qu'aucun `npm run dev` local n'occupe déjà le port 5173.
+
+Pour lancer les services sans Docker, suivre les étapes ci-dessous.
 
 ### Étape 1 : Démarrer l'infrastructure partagée (RabbitMQ)
 ```bash
@@ -149,20 +169,25 @@ Toutes les requêtes peuvent être adressées à la passerelle sur `http://local
 ### Évaluations (CQRS / Event Sourcing)
 - `GET /api/assessments` : Liste des évaluations projetées dans le Read Model.
 - `POST /api/assessments` : Création (manuelle ou par tirage automatique gRPC).
+- `POST /api/assessments/:id/schedule` : Planification de la publication à une date future (publication automatique).
 - `POST /api/assessments/:id/publish` : Publication officielle (émet `assessment.published`).
 - `POST /api/assessments/:id/cancel` : Annulation de l'évaluation.
-- `GET /api/assessments/:id/results` : Résultats et moyenne de l'évaluation (visibles post-validation).
+- `GET /api/assessments/:id/results` : Résultats et moyenne de l'évaluation (un étudiant ne reçoit que son propre résultat).
 - `POST /api/assessments/:id/rebuild` : Recalcul complet de la projection depuis l'Event Store.
 
 ### Soumissions
+- `GET /api/submissions` : Copies d'une évaluation (un étudiant ne voit que les siennes).
 - `POST /api/submissions` : Début d'une tentative étudiante sur une évaluation ouverte.
 - `PUT /api/submissions/:id/answers` : Sauvegarde intermédiaire des réponses (brouillon).
 - `POST /api/submissions/:id/files` : Téléversement de devoir (multipart/form-data).
 - `POST /api/submissions/:id/submit` : Remise définitive et émission de `submission.completed`.
+- `POST /api/submissions/:id/reopen` : Resoumission autorisée par l'enseignant responsable, avec une date limite propre à la copie si besoin (émet `submission.reopened`).
 
 ### Correction & Notes
-- `GET /api/gradings/pending` : Copies en attente de correction manuelle (Enseignant).
+- `GET /api/gradings/pending` : Copies en attente de correction manuelle (Enseignant) ; `?includeFailed=true` ajoute les corrections automatiques en échec.
+- `GET /api/gradings/:submissionId` : Détail de la correction d'une copie.
 - `PUT /api/gradings/:submissionId/questions/:questionId` : Attribution de note et commentaire.
+- `POST /api/gradings/:submissionId/retry` : Relance manuelle d'une correction automatique en échec.
 - `POST /api/gradings/:submissionId/validate` : Validation définitive de la copie et publication (`result.published`).
 
 ---
@@ -195,9 +220,37 @@ La plateforme utilise le patron de **Saga chorégraphiée** sur l'exchange Topic
 └──────────────────┘                   └──────────────────────┘
 ```
 
+Compensations et exceptions (détail dans `docs/architecture.md`) : refus hors délai (`submission.rejected`), correction automatique abandonnée puis relancée (`grading.failed`), resoumission autorisée par l'enseignant (`submission.reopened`, règle métier 3).
+
 ---
 
-## 8. Tests Bout-en-Bout (E2E)
+## 8. Tests
+
+### Tests unitaires
+
+Chaque service backend a ses tests unitaires dans son dossier `test/`
+(`node:test`, Node ≥ 22). MongoDB, RabbitMQ et les services distants y sont
+simulés : aucune infrastructure n'est nécessaire.
+
+```bash
+cd grading-service && npm test   # un seul service
+cd e2e && npm run test:unit      # tous les services, avec récapitulatif
+```
+
+| Service | Ce qui est testé |
+|---|---|
+| `api-gateway` | Routage et réécriture des chemins, JWT, rôles par méthode, anti-usurpation `X-User-*`, 502 si un service est indisponible |
+| `user-service` | Émission/vérification des JWT, hachage des mots de passe, routes login et gestion des comptes |
+| `question-service` | Répartition par difficulté et sélection gRPC `SelectQuestions` |
+| `assessment-service` | Projection Event Sourcing et rebuild, règles de publication/annulation, statistiques des résultats |
+| `submission-service` | Cycle de vie d'une copie, refus hors délai, contrôle d'accès, resoumission autorisée par l'enseignant responsable, événements publiés et consommés |
+| `grading-service` | Correction automatique par type de question, correction manuelle, validation, relance et abandon (`grading.failed`), correction abandonnée lors d'une resoumission |
+| `notification-service` | Notifications produites pour chaque événement métier, refus de dépôt, échec de correction et resoumission |
+
+La CI GitHub Actions est désactivée dans ce dépôt. La validation se fait
+localement avec `npm run test:unit` avant chaque commit ou pull request.
+
+### Tests bout-en-bout (E2E)
 
 Pour exécuter la suite de tests automatisée validant le cycle de vie complet (nominal et scénarios d'erreur) :
 

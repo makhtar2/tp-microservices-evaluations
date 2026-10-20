@@ -12,11 +12,14 @@ async function publish(routingKey, payload) {
   }
 }
 
+// enseignantId permet à submission-service de vérifier, sans appel
+// synchrone, que c'est l'enseignant responsable qui autorise une resoumission.
 function publishAssessmentPublished(assessment) {
   return publish("assessment.published", {
     assessmentId: assessment._id,
     titre: assessment.titre,
     matiere: assessment.matiere,
+    enseignantId: assessment.enseignantId,
     dateDebut: assessment.dateDebut,
     dateFin: assessment.dateFin,
     occurredAt: new Date().toISOString(),

@@ -2,23 +2,19 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
-// En dev, on route vers les services directement (pas encore d'api-gateway).
-// /api/questions/*    -> question-service   (port 3002)
-// /api/assessments/*  -> assessment-service (port 3003)
+// Toutes les requêtes /api/* passent par l'api-gateway (authentification
+// JWT, routage vers les microservices). API_URL vaut l'adresse de la
+// gateway : http://localhost:3000 en local, http://api-gateway:3000 dans
+// docker compose. Le même proxy sert en dev (vite) et en preview (Docker).
+const proxy = {
+  "/api": {
+    target: process.env.API_URL || "http://localhost:3000",
+    changeOrigin: true,
+  },
+};
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  server: {
-    port: 5173,
-    proxy: {
-      "/api/questions": {
-        target: "http://localhost:3002",
-        changeOrigin: true,
-      },
-      "/api/assessments": {
-        target: "http://localhost:3003",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ""),
-      },
-    },
-  },
+  server: { port: 5173, proxy },
+  preview: { port: 5173, proxy },
 });

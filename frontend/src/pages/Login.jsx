@@ -1,14 +1,31 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
+import { homePath, useAuth } from "../auth/useAuth";
 
 export default function Login() {
+  const { user, login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e) {
+  if (user) return <Navigate to={homePath(user.role)} replace />;
+
+  async function handleSubmit(e) {
     e.preventDefault();
-    // user-service (authentification) n'est pas encore implémenté côté backend.
-    // On navigue directement vers le tableau de bord pour l'instant.
-    navigate("/");
+    setSubmitting(true);
+    setError(null);
+    try {
+      const loggedIn = await login(email, password);
+      navigate(location.state?.from || homePath(loggedIn.role), { replace: true });
+    } catch (err) {
+      setError(err.status === 401 ? err.message : "Connexion impossible : le serveur ne répond pas.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -23,26 +40,48 @@ export default function Login() {
         </div>
 
         <h1 className="text-2xl font-extrabold tracking-tight">Bon retour</h1>
-        <p className="text-ink-muted text-sm mb-4">Connectez-vous pour gérer vos évaluations.</p>
+        <p className="text-ink-muted text-sm mb-4">Connectez-vous pour accéder à vos évaluations.</p>
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-1.5">
-            <label className="field-label">Email</label>
-            <input className="field-input" type="email" required placeholder="enseignant@etablissement.fr" />
+            <label className="field-label" htmlFor="email">
+              Email
+            </label>
+            <input
+              id="email"
+              className="field-input"
+              type="email"
+              autoComplete="username"
+              required
+              placeholder="enseignant@evaluations.local"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="field-label">Mot de passe</label>
-            <input className="field-input" type="password" required placeholder="••••••••" />
+            <label className="field-label" htmlFor="password">
+              Mot de passe
+            </label>
+            <input
+              id="password"
+              className="field-input"
+              type="password"
+              autoComplete="current-password"
+              required
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
-          <Button type="submit" className="w-full mt-2">
-            Se connecter
+          {error && (
+            <p role="alert" className="text-sm text-danger bg-danger-soft rounded-xl px-3 py-2">
+              {error}
+            </p>
+          )}
+          <Button type="submit" className="w-full mt-2" disabled={submitting}>
+            {submitting ? "Connexion…" : "Se connecter"}
           </Button>
         </form>
-
-        <p className="mt-5 text-xs text-ink-faint text-center">
-          Authentification non branchée — <code className="bg-shell px-1.5 py-0.5 rounded-md">user-service</code> reste à
-          implémenter (Groupe 2).
-        </p>
       </div>
     </div>
   );

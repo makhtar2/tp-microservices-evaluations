@@ -25,6 +25,23 @@ const submissionSchema = new Schema(
     fichiers: { type: [fichierSchema], default: [] },
     status: { type: String, enum: SUBMISSION_STATUSES, default: "EN_COURS", index: true },
     soumiseAt: { type: Date, default: null },
+    // Compensation de la Saga : renseigné quand grading-service abandonne la
+    // correction automatique (grading.failed), effacé dès qu'elle aboutit.
+    incidentCorrection: {
+      type: new Schema({ message: String, survenuAt: Date }, { _id: false }),
+      default: null,
+    },
+    // Résultat publié (result.published) : la copie ne peut plus être rouverte.
+    resultatPublieAt: { type: Date, default: null },
+    // Règle métier 3 : resoumission autorisée par l'enseignant responsable,
+    // avec éventuellement une date limite propre à cette copie.
+    resoumission: {
+      type: new Schema(
+        { autoriseePar: String, autoriseeAt: Date, dateLimite: Date, motif: String },
+        { _id: false }
+      ),
+      default: null,
+    },
   },
   { timestamps: true }
 );

@@ -58,32 +58,39 @@ Dashboard, Questions (CRUD), Évaluations (création manuelle/auto,
 publication), Résultats. Design system maison (pas de librairie de
 composants), inspiré d'une référence visuelle fournie par l'équipe.
 
-Reste à faire :
-- Brancher la page Login à `user-service` une fois qu'il existe
-  (actuellement un formulaire non fonctionnel)
-- Vue étudiant (réalisation d'une évaluation, dépôt de fichier),
-  dépend de `submission-service`
-- Vrai sélecteur de questions dans le formulaire d'évaluation manuelle
-  (actuellement une liste d'IDs à coller)
-- Brancher sur `api-gateway` une fois qu'il existe, à la place du proxy
-  de dev Vite
+Complété ensuite (toutes les requêtes passent par `api-gateway`, avec le
+JWT de l'utilisateur connecté) :
+- connexion réelle via `user-service`, menus et routes selon le rôle (fait)
+- vue étudiant : réalisation d'une évaluation, enregistrement automatique,
+  dépôt de fichier, soumission, résultats (fait)
+- page de correction pour l'enseignant, relance des corrections
+  automatiques en échec (fait)
+- gestion des utilisateurs pour l'administrateur (fait)
+- sélecteur de questions et planification de la publication (fait)
 
 ### Groupe 2 — Domaine Utilisateurs, Soumission, Correction & Orchestration
 Responsables : El Hadji Fallou Bousso, Mame Bara Samb, Pape Makhtar Aidara
 
 - `user-service` : authentification, gestion des rôles
-  (Admin/Enseignant/Étudiant)
+  (Admin/Enseignant/Étudiant) (fait)
 - `submission-service` : CRUD des soumissions/copies, consommation de
-  `AssessmentPublished`
-- `grading-service` : correction manuelle et résultats, consommation de
-  `SubmissionCompleted`
-- `notification-service` : consommation des 5 événements métier
-  (messaging uniquement, pas d'API REST)
+  `AssessmentPublished` (fait)
+- Resoumission autorisée par l'enseignant responsable (règle métier 3) :
+  `POST /submissions/:id/reopen`, événement `submission.reopened`, bouton
+  dans la page de correction (fait)
+- `grading-service` : correction automatique et manuelle, résultats,
+  consommation de `SubmissionCompleted` (fait)
+- `notification-service` : consommation des événements métier
+  (messaging uniquement, pas d'API REST) (fait)
 - `api-gateway` : point d'entrée unique, routage, authentification
-  centralisée
-- Setup du message broker (RabbitMQ)
-- Implémentation de la Saga choréographiée Soumission → Correction →
-  Notification, gestion de la compensation, tests des scénarios d'échec
+  centralisée (fait)
+- Setup du message broker (RabbitMQ) (fait)
+- Saga choréographiée Soumission → Correction → Notification avec
+  compensation (relance, `grading.failed`, refus hors délai) et files
+  dead-letters (fait, voir `docs/architecture.md`)
+- Tests bout-en-bout des scénarios d'échec et tests unitaires de chaque
+  service (fait, exécution locale via `e2e/` et le README ; la CI GitHub
+  Actions est désactivée)
 
 ### Toute l'équipe (tâches transverses)
 - Contrats OpenAPI (`docs/openapi/*.yaml`)

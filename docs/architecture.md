@@ -75,11 +75,50 @@ SubmissionCompleted → grading-service (correction auto)
                   notification-service (notifie l'étudiant)
 ```
 
-**Compensation** : si la correction automatique échoue ou si la
-soumission arrive hors délai, `submission-service` déclenche
-`AnnulerSoumission` et `grading-service` ne produit pas de note ; l'état
-reste consultable par l'enseignant pour intervention manuelle
-(`RouvrirCorrection`).
+**Compensation** (implémentée) :
+
+- **Soumission hors délai** : `submission-service` passe la copie en
+  `REFUSEE_HORS_DELAI`, ne publie pas `SubmissionCompleted` (aucune
+  correction n'est déclenchée) et publie `submission.rejected` ;
+  `notification-service` prévient l'étudiant.
+- **Correction automatique impossible** (service distant injoignable) :
+  `grading-service` garde la copie `EN_ATTENTE` et la relance
+  périodiquement. Après `GRADING_MAX_ATTEMPTS` échecs, la copie passe en
+  `ECHEC_CORRECTION` et `grading-service` publie `grading.failed` :
+  `submission-service` signale l'incident sur la copie
+  (`incidentCorrection`) et `notification-service` prévient l'étudiant et
+  l'enseignant. L'enseignant relance la correction
+  (`POST /gradings/:id/retry`) ; quand elle aboutit, `grading.completed`
+  efface l'incident côté `submission-service`.
+
+```
+SubmissionCompleted → grading-service ──(échecs répétés)──▶ grading.failed
+                                                            │
+                       ┌────────────────────────────────────┤
+                       ▼                                    ▼
+        submission-service (incident)          notification-service
+```
+
+**Resoumission autorisée** (règle métier 3) : l'enseignant responsable
+rouvre une copie soumise ou refusée hors délai
+(`POST /submissions/:id/reopen`, avec une date limite propre à la copie si
+l'évaluation est terminée). `submission-service` la repasse `EN_COURS` et
+publie `submission.reopened` : `grading-service` supprime la correction non
+validée (la nouvelle soumission en recrée une), `notification-service`
+prévient l'étudiant. `submission-service` connaît l'enseignant responsable
+par `assessment.published` et refuse la réouverture dès qu'il a reçu
+`result.published` pour la copie. `submission.reopened` et
+`submission.completed` arrivent sur la même queue de `grading-service`,
+donc dans l'ordre.
+
+```
+POST /reopen → submission-service ──▶ submission.reopened
+                                            │
+                       ┌────────────────────┤
+                       ▼                    ▼
+     grading-service (correction       notification-service
+     abandonnée)                       (prévient l'étudiant)
+```
 
 ## CQRS + Event Sourcing (assessment-service)
 
@@ -108,15 +147,21 @@ interopérables :
 - **Routing keys** (une par événement métier) :
   - `assessment.published`, `assessment.closing_soon` — publiés par
     `assessment-service`
-  - `submission.completed` — à publier par `submission-service`
-  - `grading.completed`, `result.published` — à publier par
-    `grading-service`
+  - `submission.completed`, `submission.rejected` (copie refusée hors
+    délai, règle métier 2), `submission.reopened` (resoumission autorisée,
+    règle métier 3) — publiés par `submission-service`
+  - `grading.completed`, `result.published`, `grading.failed`
+    (compensation) — publiés par `grading-service`
 - **Payload** : JSON, contient toujours `assessmentId` et, le cas échéant,
   `etudiantId`
 - Chaque service consommateur déclare sa propre queue durable et la lie
   aux routing keys qui l'intéressent (ex. `assessment-service` lie
   `assessment-service.grading-events` à `grading.completed` et
   `result.published`)
+- **Dead-letters** : un message dont le traitement échoue n'est plus
+  perdu. Il est copié dans `<queue>.dead-letters` (en-têtes
+  `x-routing-key`, `x-error`, `x-failed-at`) puis acquitté ; on peut
+  l'inspecter et le rejouer depuis l'interface d'administration RabbitMQ
 - Connexion tolérante aux pannes : si le broker est indisponible au
   démarrage, le service continue de fonctionner en REST (avertissement en
   log), sans bloquer sur la messagerie

@@ -113,6 +113,52 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /assessments/{id}/schedule:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [assessments]
+      summary: >
+        Planifier la publication (état → PLANIFIÉE). L'évaluation est
+        publiée automatiquement à `datePublication` (AssessmentPublished).
+        Mêmes règles que la publication (au moins une question, barème > 0).
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [datePublication]
+              properties:
+                datePublication:
+                  type: string
+                  format: date-time
+                  description: Dans le futur, et avant la date de fin
+      responses:
+        "200":
+          description: Évaluation planifiée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+        "400":
+          description: datePublication absente, passée ou après la date de fin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Pas de question, barème à 0, ou état incompatible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /assessments/{id}/publish:
     parameters:
       - name: id

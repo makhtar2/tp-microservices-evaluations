@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
-import { Plus, Send, Ban, ChevronDown } from "lucide-react";
+import { Plus, Send, Ban, ChevronDown, CalendarClock } from "lucide-react";
 import { Card, CardHeader } from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import StateBlock from "../components/ui/StateBlock";
-import { listAssessments, createAssessment, publishAssessment, cancelAssessment } from "../api/assessments";
-import { STATUS_LABELS, STATUS_TONES } from "../constants/assessment";
-
-const DEFAULT_ENSEIGNANT_ID = "ens-demo";
+import {
+  listAssessments,
+  createAssessment,
+  publishAssessment,
+  scheduleAssessment,
+  cancelAssessment,
+} from "../api/assessments";
+import { listQuestions } from "../api/questions";
+import { STATUS_LABELS, STATUS_TONES, DIFFICULTY_LABELS, QUESTION_TYPE_LABELS, formatDateTime } from "../constants/assessment";
+import { useAuth } from "../auth/useAuth";
 
 const NIVEAUX = {
   FACILE: { label: "Plutôt facile", repartition: { facile: 70, moyen: 25, difficile: 5 } },
@@ -21,8 +27,7 @@ const EMPTY_FORM = {
   mode: "auto",
   nombre: 5,
   niveau: "EQUILIBRE",
-  questionIds: "",
-  bareme: "",
+  questionIds: [],
   themes: "",
   dateDebut: "",
   dateFin: "",
@@ -30,17 +35,45 @@ const EMPTY_FORM = {
 };
 
 export default function Assessments() {
+  const { user } = useAuth();
   const [assessments, setAssessments] = useState(null);
   const [error, setError] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [bank, setBank] = useState(null);
+  const [scheduling, setScheduling] = useState(null); // { id, date }
 
-  function load() {
-    listAssessments().then(setAssessments).catch((err) => setError(err.message));
+  // Mode manuel : questions actives de la matière saisie, à cocher.
+  useEffect(() => {
+    if (form.mode !== "manuel" || !form.matiere.trim()) return undefined;
+    const timer = setTimeout(() => {
+      listQuestions({ subject: form.matiere.trim(), limit: 100 })
+        .then((res) => setBank(res.items))
+        .catch((err) => setError(err.message));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [form.mode, form.matiere]);
+
+  const selectedQuestions = (bank ?? []).filter((q) => form.questionIds.includes(q._id));
+  const bareme = selectedQuestions.reduce((total, q) => total + q.points, 0);
+
+  function toggleQuestion(id) {
+    setForm({
+      ...form,
+      questionIds: form.questionIds.includes(id) ? form.questionIds.filter((q) => q !== id) : [...form.questionIds, id],
+    });
   }
 
+  function load() {
+    // Un enseignant gère ses propres évaluations ; l'administrateur les voit toutes.
+    listAssessments(user.role === "ENSEIGNANT" ? { enseignantId: user.id } : {})
+      .then(setAssessments)
+      .catch((err) => setError(err.message));
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(load, []);
 
   async function handleSubmit(e) {
@@ -50,10 +83,9 @@ export default function Assessments() {
     try {
       const payload = {
         titre: form.titre,
-        enseignantId: DEFAULT_ENSEIGNANT_ID,
         matiere: form.matiere,
-        dateDebut: form.dateDebut || undefined,
-        dateFin: form.dateFin || undefined,
+        dateDebut: form.dateDebut ? new Date(form.dateDebut).toISOString() : undefined,
+        dateFin: form.dateFin ? new Date(form.dateFin).toISOString() : undefined,
         consignes: form.consignes || undefined,
       };
 
@@ -67,11 +99,8 @@ export default function Assessments() {
             : [],
         };
       } else {
-        payload.questionIds = form.questionIds
-          .split(",")
-          .map((id) => id.trim())
-          .filter(Boolean);
-        payload.bareme = Number(form.bareme) || 0;
+        payload.questionIds = selectedQuestions.map((q) => q._id);
+        payload.bareme = bareme;
       }
 
       await createAssessment(payload);
@@ -89,6 +118,18 @@ export default function Assessments() {
     setActionError(null);
     try {
       await publishAssessment(id);
+      load();
+    } catch (err) {
+      setActionError(err.message);
+    }
+  }
+
+  async function handleSchedule(e) {
+    e.preventDefault();
+    setActionError(null);
+    try {
+      await scheduleAssessment(scheduling.id, new Date(scheduling.date).toISOString());
+      setScheduling(null);
       load();
     } catch (err) {
       setActionError(err.message);
@@ -171,21 +212,34 @@ export default function Assessments() {
             ) : (
               <>
                 <div className="flex flex-col gap-1.5">
-                  <label className="field-label">Questions à inclure (IDs séparés par virgule)</label>
-                  <textarea
-                    className="field-textarea"
-                    value={form.questionIds}
-                    onChange={(e) => setForm({ ...form, questionIds: e.target.value })}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="field-label">Barème total</label>
-                  <input
-                    className="field-input"
-                    type="number"
-                    value={form.bareme}
-                    onChange={(e) => setForm({ ...form, bareme: e.target.value })}
-                  />
+                  <span className="field-label">Questions à inclure</span>
+                  {!form.matiere.trim() && <span className="text-xs text-ink-muted">Saisissez d'abord la matière.</span>}
+                  {form.matiere.trim() && bank && bank.length === 0 && (
+                    <span className="text-xs text-ink-muted">Aucune question active pour cette matière.</span>
+                  )}
+                  {form.matiere.trim() && bank && bank.length > 0 && (
+                    <div className="flex flex-col gap-1 max-h-64 overflow-y-auto rounded-xl border border-border p-2">
+                      {bank.map((q) => (
+                        <label key={q._id} className="flex items-start gap-2 text-[13px] p-1.5 rounded-lg hover:bg-shell cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="mt-0.5"
+                            checked={form.questionIds.includes(q._id)}
+                            onChange={() => toggleQuestion(q._id)}
+                          />
+                          <span>
+                            {q.statement.length > 70 ? `${q.statement.slice(0, 70)}…` : q.statement}
+                            <span className="block text-xs text-ink-muted">
+                              {QUESTION_TYPE_LABELS[q.type]} · {DIFFICULTY_LABELS[q.difficulty]} · {q.points} pt · {q.chapter}
+                            </span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  <span className="text-xs text-ink-muted">
+                    {form.questionIds.length} question(s) · barème total {bareme}
+                  </span>
                 </div>
               </>
             )}
@@ -289,6 +343,24 @@ export default function Assessments() {
                     <td>{a.matiere}</td>
                     <td>
                       <Badge tone={STATUS_TONES[a.status]}>{STATUS_LABELS[a.status]}</Badge>
+                      {a.status === "PLANIFIEE" && (
+                        <span className="block text-xs text-ink-muted mt-1">le {formatDateTime(a.datePublication)}</span>
+                      )}
+                      {scheduling?.id === a._id && (
+                        <form className="flex items-center gap-1.5 mt-2" onSubmit={handleSchedule}>
+                          <input
+                            className="field-input !py-1.5"
+                            type="datetime-local"
+                            required
+                            aria-label="Date de publication"
+                            value={scheduling.date}
+                            onChange={(e) => setScheduling({ ...scheduling, date: e.target.value })}
+                          />
+                          <Button size="sm" type="submit">
+                            OK
+                          </Button>
+                        </form>
+                      )}
                     </td>
                     <td>{a.questionIds?.length ?? 0}</td>
                     <td>
@@ -301,6 +373,16 @@ export default function Assessments() {
                             title="Publier"
                           >
                             <Send size={15} />
+                          </button>
+                        )}
+                        {["BROUILLON", "PLANIFIEE"].includes(a.status) && (
+                          <button
+                            className="icon-action icon-action-positive"
+                            onClick={() => setScheduling(scheduling?.id === a._id ? null : { id: a._id, date: "" })}
+                            aria-label="Planifier la publication"
+                            title="Planifier la publication"
+                          >
+                            <CalendarClock size={15} />
                           </button>
                         )}
                         {["PLANIFIEE", "PUBLIEE"].includes(a.status) && (

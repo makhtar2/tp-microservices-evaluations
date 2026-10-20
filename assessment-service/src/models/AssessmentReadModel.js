@@ -27,6 +27,8 @@ const assessmentReadModelSchema = new Schema(
     dateFin: { type: Date },
     duree: { type: Number },
     consignes: { type: String },
+    datePublication: { type: Date }, // publication automatique (statut PLANIFIEE)
+    closingSoonNotifiedAt: { type: Date }, // AssessmentClosingSoon déjà émis
     status: {
       type: String,
       enum: ["BROUILLON", "PLANIFIEE", "PUBLIEE", "EN_COURS", "TERMINEE", "CORRIGEE", "ANNULEE"],

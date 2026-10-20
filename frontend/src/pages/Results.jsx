@@ -3,8 +3,10 @@ import { Card, CardHeader } from "../components/ui/Card";
 import StateBlock from "../components/ui/StateBlock";
 import StatCard from "../components/ui/StatCard";
 import { listAssessments, getResults } from "../api/assessments";
+import { useStudentNames } from "../hooks/useStudentNames";
 
 export default function Results() {
+  const studentName = useStudentNames();
   const [assessments, setAssessments] = useState(null);
   const [selectedId, setSelectedId] = useState("");
   const [results, setResults] = useState(null);
@@ -15,10 +17,7 @@ export default function Results() {
   }, []);
 
   useEffect(() => {
-    if (!selectedId) {
-      setResults(null);
-      return;
-    }
+    if (!selectedId) return;
     getResults(selectedId).then(setResults).catch((err) => setError(err.message));
   }, [selectedId]);
 
@@ -36,7 +35,14 @@ export default function Results() {
         <CardHeader
           title="Choisir une évaluation"
           action={
-            <select className="field-input min-w-[220px]" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+            <select
+              className="field-input min-w-[220px]"
+              value={selectedId}
+              onChange={(e) => {
+                setResults(null);
+                setSelectedId(e.target.value);
+              }}
+            >
               <option value="">— Sélectionner —</option>
               {(assessments ?? []).map((a) => (
                 <option key={a._id} value={a._id}>
@@ -80,7 +86,7 @@ export default function Results() {
                 <tbody>
                   {results.resultatsEtudiants.map((r) => (
                     <tr key={r.etudiantId}>
-                      <td>{r.etudiantId}</td>
+                      <td>{studentName(r.etudiantId)}</td>
                       <td>{r.note}</td>
                       <td>{r.commentaire ?? "—"}</td>
                     </tr>

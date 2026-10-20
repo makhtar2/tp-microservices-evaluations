@@ -14,8 +14,8 @@ function handleCommandError(res, error) {
 
 // Déclarée avant /gradings/:submissionId pour ne pas être capturée par elle.
 router.get("/gradings/pending", async (req, res) => {
-  const { assessmentId, enseignantId } = req.query;
-  res.json(await commands.listPending({ assessmentId, enseignantId }));
+  const { assessmentId, enseignantId, includeFailed } = req.query;
+  res.json(await commands.listPending({ assessmentId, enseignantId, includeFailed: includeFailed === "true" }));
 });
 
 router.get("/gradings/:submissionId", async (req, res) => {
@@ -28,6 +28,17 @@ router.put("/gradings/:submissionId/questions/:questionId", async (req, res) => 
   try {
     const { submissionId, questionId } = req.params;
     const grading = await commands.gradeQuestion(submissionId, questionId, req.body, req.get("x-user-id"));
+    if (!grading) return res.status(404).json(NOT_FOUND);
+    res.json(grading);
+  } catch (error) {
+    handleCommandError(res, error);
+  }
+});
+
+// Relance manuelle de la correction automatique (après ECHEC_CORRECTION).
+router.post("/gradings/:submissionId/retry", async (req, res) => {
+  try {
+    const grading = await commands.retry(req.params.submissionId);
     if (!grading) return res.status(404).json(NOT_FOUND);
     res.json(grading);
   } catch (error) {

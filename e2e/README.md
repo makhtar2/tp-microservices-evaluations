@@ -65,3 +65,39 @@ Création → publication → soumission → correction → résultat :
   reste `SOUMISE`, la correction reste `EN_ATTENTE` avec l'erreur enregistrée,
   et l'enseignant ne peut ni noter ni valider. `question-service` est
   redémarré à la fin du scénario.
+
+### Sécurité et planification (`scenarios/securite-et-planification.test.js`)
+
+Règles appliquées à partir de l'identité transmise par l'api-gateway :
+
+- un étudiant lit les questions sans les bonnes réponses ni le guide de correction ;
+- un brouillon est invisible pour les étudiants ;
+- l'enseignant responsable d'une évaluation est celui du token ;
+- un étudiant ne peut ni ouvrir, ni lire, ni modifier la copie d'un autre ;
+- un fichier exécutable est refusé au dépôt ;
+- un étudiant ne voit que son propre résultat (avec la moyenne de la classe).
+
+Planification : une évaluation planifiée est publiée automatiquement à la
+date prévue (`AssessmentPublished` émis, copie ouvrable), et une date passée
+ou une évaluation sans question est refusée.
+
+## Test de l'interface (`ui/parcours-interface.js`)
+
+Parcours complet sur la vraie interface React, dans Chrome headless (piloté
+par le protocole DevTools, sans dépendance) : l'enseignant crée un QCM et une
+question ouverte, construit une évaluation avec le sélecteur de questions et
+la publie ; l'étudiant la passe (enregistrement automatique, soumission) ;
+l'enseignant corrige et valide ; l'étudiant consulte son résultat ;
+l'administrateur ouvre la gestion des comptes. Une capture de chaque étape
+est écrite dans `e2e/logs/ui/`.
+
+```bash
+cd e2e && npm run stack                                   # terminal 1
+cd frontend && API_URL=http://127.0.0.1:4100 npm run dev  # terminal 2
+cd e2e && npm run test:ui                                 # terminal 3
+```
+
+`CHROME_PATH` indique Chrome s'il n'est pas à l'emplacement par défaut ;
+`FRONTEND_URL` change l'adresse du frontend (défaut `http://localhost:5173`).
+`npm run stack` sert aussi pour une démo sur une machine qui manque de mémoire
+pour `docker compose`.

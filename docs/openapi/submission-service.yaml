@@ -198,6 +198,70 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /submissions/{id}/reopen:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [submissions]
+      summary: >
+        Autoriser une resoumission (règle métier 3). Réservé à l'enseignant
+        responsable de l'évaluation. La copie (SOUMISE ou REFUSEE_HORS_DELAI)
+        redevient EN_COURS avec ses réponses, et SubmissionReopened est
+        publié : grading-service abandonne la correction en cours,
+        notification-service prévient l'étudiant. Impossible une fois le
+        résultat publié.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dateLimite:
+                  type: string
+                  format: date-time
+                  description: >
+                    Date limite propre à cette copie, dans le futur.
+                    Obligatoire si la date de fin de l'évaluation est passée.
+                motif:
+                  type: string
+      responses:
+        "200":
+          description: Copie rouverte
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+        "400":
+          description: dateLimite absente (évaluation terminée), passée ou invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: L'appelant n'est pas l'enseignant responsable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Copie introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Copie encore en cours, ou résultat déjà publié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -254,6 +318,31 @@ components:
           type: string
           format: date-time
           nullable: true
+        resultatPublieAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Renseigné à la réception de ResultPublished ; la copie ne peut plus être rouverte.
+        resoumission:
+          $ref: "#/components/schemas/Resoumission"
+
+    Resoumission:
+      type: object
+      nullable: true
+      description: Présent quand l'enseignant a autorisé une resoumission.
+      properties:
+        autoriseePar:
+          type: string
+        autoriseeAt:
+          type: string
+          format: date-time
+        dateLimite:
+          type: string
+          format: date-time
+          nullable: true
+          description: Remplace la date de fin de l'évaluation pour cette copie.
+        motif:
+          type: string
 
     Error:
       type: object

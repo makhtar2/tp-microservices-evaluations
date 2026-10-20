@@ -33,4 +33,19 @@ function publishResultPublished(grading) {
   return publish("result.published", resultPayload(grading));
 }
 
-module.exports = { publish, publishGradingCompleted, publishResultPublished };
+// Compensation de la Saga : la correction automatique est abandonnée après
+// plusieurs échecs. submission-service marque la copie, notification-service
+// prévient l'étudiant et l'enseignant.
+function publishGradingFailed(grading) {
+  return publish("grading.failed", {
+    submissionId: grading.submissionId,
+    assessmentId: grading.assessmentId,
+    etudiantId: grading.etudiantId,
+    enseignantId: grading.enseignantId,
+    attempts: grading.attempts,
+    error: grading.lastError,
+    occurredAt: new Date().toISOString(),
+  });
+}
+
+module.exports = { publish, publishGradingCompleted, publishResultPublished, publishGradingFailed };

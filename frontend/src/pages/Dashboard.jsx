@@ -6,20 +6,23 @@ import Badge from "../components/ui/Badge";
 import StateBlock from "../components/ui/StateBlock";
 import { listQuestions } from "../api/questions";
 import { listAssessments } from "../api/assessments";
+import { useAuth } from "../auth/useAuth";
 import { STATUS_LABELS, STATUS_TONES, PUBLISHED_STATUSES } from "../constants/assessment";
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [questions, setQuestions] = useState(null);
   const [assessments, setAssessments] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    Promise.all([listQuestions({ limit: 100 }), listAssessments()])
+    Promise.all([listQuestions({ limit: 100 }), listAssessments({ enseignantId: user.id })])
       .then(([questionsRes, assessmentsRes]) => {
         setQuestions(questionsRes);
         setAssessments(assessmentsRes);
       })
       .catch((err) => setError(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stats = useMemo(() => {
@@ -39,7 +42,7 @@ export default function Dashboard() {
   return (
     <>
       <h1 className="text-[28px] font-extrabold tracking-tight">
-        Bonjour <span className="text-ink-faint">Enseignant</span>
+        Bonjour <span className="text-ink-faint">{user.prenom}</span>
       </h1>
 
       {error && <StateBlock title="Impossible de charger les données" hint={error} />}

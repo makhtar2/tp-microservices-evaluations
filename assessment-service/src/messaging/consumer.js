@@ -2,6 +2,7 @@ const { getChannel, EXCHANGE } = require("./connection");
 const { recordEvent } = require("../projectionUpdater");
 
 const QUEUE = "assessment-service.grading-events";
+const DEAD_LETTER_QUEUE = `${QUEUE}.dead-letters`;
 const ROUTING_KEYS = ["grading.completed", "result.published"];
 
 // Consomme les événements publiés par grading-service pour alimenter le
@@ -14,6 +15,9 @@ async function startConsumer() {
   try {
     const channel = await getChannel();
     await channel.assertQueue(QUEUE, { durable: true });
+    // Les messages dont le traitement échoue y sont conservés (avec l'erreur)
+    // pour inspection et rejeu depuis l'interface RabbitMQ, au lieu d'être perdus.
+    await channel.assertQueue(DEAD_LETTER_QUEUE, { durable: true });
     // Un message à la fois : recordEvent lit puis réécrit le Read Model ;
     // traités en parallèle, GradingCompleted et ResultPublished d'une même
     // copie s'écrasaient (le résultat publié disparaissait du Read Model).
@@ -31,7 +35,12 @@ async function startConsumer() {
         channel.ack(msg);
       } catch (err) {
         console.error("[assessment-service] Erreur de traitement d'un événement entrant :", err.message);
-        channel.nack(msg, false, false);
+        channel.sendToQueue(DEAD_LETTER_QUEUE, msg.content, {
+          persistent: true,
+          contentType: "application/json",
+          headers: { "x-routing-key": msg.fields.routingKey, "x-error": err.message, "x-failed-at": new Date().toISOString() },
+        });
+        channel.ack(msg);
       }
     });
 
