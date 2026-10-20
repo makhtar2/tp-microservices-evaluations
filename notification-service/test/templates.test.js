@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { ROUTING_KEYS, buildNotifications } = require("../src/templates");
 
 describe("ROUTING_KEYS", () => {
-  it("couvre les 5 événements métier, le refus de dépôt et l'échec de correction", () => {
+  it("couvre les 5 événements métier, le refus de dépôt, la resoumission et l'échec de correction", () => {
     assert.deepEqual([...ROUTING_KEYS].sort(), [
       "assessment.closing_soon",
       "assessment.published",
@@ -12,6 +12,7 @@ describe("ROUTING_KEYS", () => {
       "result.published",
       "submission.completed",
       "submission.rejected",
+      "submission.reopened",
     ]);
   });
 });

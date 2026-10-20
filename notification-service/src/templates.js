@@ -46,6 +46,17 @@ const TEMPLATES = {
       message: "La date limite de l'évaluation est dépassée : votre copie n'a pas pu être déposée.",
     },
   ],
+  "submission.reopened": (e) => [
+    {
+      userId: e.etudiantId,
+      type: "SubmissionReopened",
+      titre: "Resoumission autorisée",
+      message:
+        `Votre enseignant a rouvert votre copie : vous pouvez la modifier et la soumettre à nouveau` +
+        (e.dateLimite ? ` avant le ${formatDate(e.dateLimite)}.` : ".") +
+        (e.motif ? ` Motif : ${e.motif}` : ""),
+    },
+  ],
   "grading.completed": (e) => [
     {
       userId: e.etudiantId,
