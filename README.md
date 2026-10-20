@@ -181,6 +181,7 @@ Toutes les requêtes peuvent être adressées à la passerelle sur `http://local
 - `PUT /api/submissions/:id/answers` : Sauvegarde intermédiaire des réponses (brouillon).
 - `POST /api/submissions/:id/files` : Téléversement de devoir (multipart/form-data).
 - `POST /api/submissions/:id/submit` : Remise définitive et émission de `submission.completed`.
+- `POST /api/submissions/:id/reopen` : Resoumission autorisée par l'enseignant responsable, avec une date limite propre à la copie si besoin (émet `submission.reopened`).
 
 ### Correction & Notes
 - `GET /api/gradings/pending` : Copies en attente de correction manuelle (Enseignant) ; `?includeFailed=true` ajoute les corrections automatiques en échec.
@@ -219,6 +220,8 @@ La plateforme utilise le patron de **Saga chorégraphiée** sur l'exchange Topic
 └──────────────────┘                   └──────────────────────┘
 ```
 
+Compensations et exceptions (détail dans `docs/architecture.md`) : refus hors délai (`submission.rejected`), correction automatique abandonnée puis relancée (`grading.failed`), resoumission autorisée par l'enseignant (`submission.reopened`, règle métier 3).
+
 ---
 
 ## 8. Tests
@@ -240,9 +243,9 @@ cd e2e && npm run test:unit      # tous les services, avec récapitulatif
 | `user-service` | Émission/vérification des JWT, hachage des mots de passe, routes login et gestion des comptes |
 | `question-service` | Répartition par difficulté et sélection gRPC `SelectQuestions` |
 | `assessment-service` | Projection Event Sourcing et rebuild, règles de publication/annulation, statistiques des résultats |
-| `submission-service` | Cycle de vie d'une copie, refus hors délai, événement `submission.completed` |
-| `grading-service` | Correction automatique par type de question, correction manuelle, validation, copie `EN_ATTENTE` si un service est injoignable |
-| `notification-service` | Notifications produites pour chacun des 5 événements métier |
+| `submission-service` | Cycle de vie d'une copie, refus hors délai, contrôle d'accès, resoumission autorisée par l'enseignant responsable, événements publiés et consommés |
+| `grading-service` | Correction automatique par type de question, correction manuelle, validation, relance et abandon (`grading.failed`), correction abandonnée lors d'une resoumission |
+| `notification-service` | Notifications produites pour chaque événement métier, refus de dépôt, échec de correction et resoumission |
 
 Ces tests tournent aussi sur GitHub Actions à chaque push sur `main` et à
 chaque pull request (`.github/workflows/tests.yml`).
