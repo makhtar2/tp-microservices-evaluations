@@ -30,6 +30,12 @@ export function submitSubmission(id) {
   return api.post(`${BASE}/${id}/submit`);
 }
 
+// Resoumission autorisée par l'enseignant responsable (règle métier 3).
+// `dateLimite` (ISO) est obligatoire si l'évaluation est terminée.
+export function reopenSubmission(id, { dateLimite, motif } = {}) {
+  return api.post(`${BASE}/${id}/reopen`, { dateLimite: dateLimite || undefined, motif: motif || undefined });
+}
+
 // Les fichiers déposés (`/uploads/...`) sont servis via la gateway sous /api.
 export function fileUrl(fichier) {
   return `/api${fichier.url}`;
