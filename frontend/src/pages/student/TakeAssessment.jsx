@@ -192,6 +192,9 @@ export default function TakeAssessment() {
   const now = new Date();
   const notYetOpen = assessment.dateDebut && now < new Date(assessment.dateDebut);
   const closed = assessment.dateFin && now > new Date(assessment.dateFin);
+  // Resoumission autorisée : la date limite accordée remplace celle de l'évaluation.
+  const reopened = editable && submission.resoumission;
+  const deadline = submission?.resoumission?.dateLimite || assessment.dateFin;
 
   return (
     <>
@@ -204,7 +207,7 @@ export default function TakeAssessment() {
           <h1 className="text-[28px] font-extrabold tracking-tight">{assessment.titre}</h1>
           <p className="text-ink-muted text-sm">
             {assessment.matiere} · {questions.length} question(s) · barème {assessment.bareme} ·{" "}
-            {assessment.dateFin ? `à rendre avant le ${formatDateTime(assessment.dateFin)}` : "sans date limite"}
+            {deadline ? `à rendre avant le ${formatDateTime(deadline)}` : "sans date limite"}
           </p>
         </div>
         {submission && (
@@ -220,6 +223,17 @@ export default function TakeAssessment() {
       )}
 
       {error && <StateBlock title="Action impossible" hint={error} />}
+
+      {reopened && (
+        <StateBlock
+          title="Resoumission autorisée par votre enseignant"
+          hint={
+            `Modifiez votre copie puis soumettez-la à nouveau` +
+            (deadline ? ` avant le ${formatDateTime(deadline)}.` : ".") +
+            (submission.resoumission.motif ? ` Motif : ${submission.resoumission.motif}` : "")
+          }
+        />
+      )}
 
       {submission?.incidentCorrection && (
         <StateBlock
