@@ -169,20 +169,24 @@ Toutes les requêtes peuvent être adressées à la passerelle sur `http://local
 ### Évaluations (CQRS / Event Sourcing)
 - `GET /api/assessments` : Liste des évaluations projetées dans le Read Model.
 - `POST /api/assessments` : Création (manuelle ou par tirage automatique gRPC).
+- `POST /api/assessments/:id/schedule` : Planification de la publication à une date future (publication automatique).
 - `POST /api/assessments/:id/publish` : Publication officielle (émet `assessment.published`).
 - `POST /api/assessments/:id/cancel` : Annulation de l'évaluation.
-- `GET /api/assessments/:id/results` : Résultats et moyenne de l'évaluation (visibles post-validation).
+- `GET /api/assessments/:id/results` : Résultats et moyenne de l'évaluation (un étudiant ne reçoit que son propre résultat).
 - `POST /api/assessments/:id/rebuild` : Recalcul complet de la projection depuis l'Event Store.
 
 ### Soumissions
+- `GET /api/submissions` : Copies d'une évaluation (un étudiant ne voit que les siennes).
 - `POST /api/submissions` : Début d'une tentative étudiante sur une évaluation ouverte.
 - `PUT /api/submissions/:id/answers` : Sauvegarde intermédiaire des réponses (brouillon).
 - `POST /api/submissions/:id/files` : Téléversement de devoir (multipart/form-data).
 - `POST /api/submissions/:id/submit` : Remise définitive et émission de `submission.completed`.
 
 ### Correction & Notes
-- `GET /api/gradings/pending` : Copies en attente de correction manuelle (Enseignant).
+- `GET /api/gradings/pending` : Copies en attente de correction manuelle (Enseignant) ; `?includeFailed=true` ajoute les corrections automatiques en échec.
+- `GET /api/gradings/:submissionId` : Détail de la correction d'une copie.
 - `PUT /api/gradings/:submissionId/questions/:questionId` : Attribution de note et commentaire.
+- `POST /api/gradings/:submissionId/retry` : Relance manuelle d'une correction automatique en échec.
 - `POST /api/gradings/:submissionId/validate` : Validation définitive de la copie et publication (`result.published`).
 
 ---
