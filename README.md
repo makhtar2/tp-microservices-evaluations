@@ -47,7 +47,7 @@ Chaque service dispose d'un modèle `.env.example`. Voici la synthèse des ports
 | **submission-service** | `PORT` | `3004` | `MONGO_URI=mongodb://127.0.0.1:27017/submission_service`<br>`RABBITMQ_URL=amqp://localhost:5672` |
 | **grading-service** | `PORT` | `3005` | `MONGO_URI=mongodb://127.0.0.1:27017/grading_service`<br>`RABBITMQ_URL=amqp://localhost:5672`<br>`ASSESSMENT_SERVICE_URL=http://localhost:3003`<br>`QUESTION_SERVICE_URL=http://localhost:3002` |
 | **notification-service** | *Aucun* | - | `MONGO_URI=mongodb://127.0.0.1:27017/notification_service`<br>`RABBITMQ_URL=amqp://localhost:5672` |
-| **frontend** | `server.port` | `5173` | Proxifie vers `http://localhost:3002` et `http://localhost:3003` (ou Gateway `3000`) |
+| **frontend** | - | `5173` | `API_URL=http://localhost:3000` : toutes les requêtes `/api/*` passent par l'api-gateway (`http://api-gateway:3000` dans docker compose) |
 
 ---
 
