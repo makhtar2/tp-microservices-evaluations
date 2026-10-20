@@ -11,3 +11,4 @@ require("./scenarios/parcours-complet.test");
 require("./scenarios/echec-hors-delai.test");
 require("./scenarios/echec-correction.test");
 require("./scenarios/securite-et-planification.test");
+require("./scenarios/resoumission.test");
