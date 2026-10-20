@@ -4,7 +4,15 @@ const amqp = require("amqplib");
 const mongoose = require("mongoose");
 const Submission = require("../src/models/Submission");
 const OpenAssessment = require("../src/models/OpenAssessment");
-const { openSubmission, saveAnswers, addFile, submit, ensureAccess, CommandError } = require("../src/commands");
+const {
+  openSubmission,
+  saveAnswers,
+  addFile,
+  submit,
+  reopenSubmission,
+  ensureAccess,
+  CommandError,
+} = require("../src/commands");
 
 // MongoDB est simulé (OpenAssessment / Submission) et RabbitMQ aussi :
 // amqplib.connect renvoie un canal qui enregistre les messages publiés.
@@ -251,5 +259,94 @@ describe("contrôle d'accès selon l'identité transmise par l'api-gateway", () 
     assert.doesNotThrow(() => ensureAccess(copie, etudiant("e1")));
     assert.doesNotThrow(() => ensureAccess(copie, {}));
     assert.throws(() => ensureAccess(copie, etudiant("e2")), (err) => err.status === 403);
+  });
+});
+
+describe("reopenSubmission (règle métier 3 : resoumission autorisée)", () => {
+  const enseignant = { userId: "ens-1", role: "ENSEIGNANT" };
+
+  async function copieSoumise() {
+    publishAssessment("a1");
+    assessments.get("a1").enseignantId = "ens-1";
+    const { id } = await openSubmission({ assessmentId: "a1", etudiantId: "e1" });
+    await saveAnswers(id, [{ questionId: "q1", reponse: "A" }]);
+    await submit(id);
+    published.length = 0;
+    return id;
+  }
+
+  it("rouvre une copie soumise, garde ses réponses et publie submission.reopened", async () => {
+    const id = await copieSoumise();
+    const submission = await reopenSubmission(id, { motif: "Fichier oublié" }, enseignant);
+
+    assert.equal(submission.status, "EN_COURS");
+    assert.equal(submission.soumiseAt, null);
+    assert.equal(submission.resoumission.autoriseePar, "ens-1");
+    assert.equal(submission.resoumission.motif, "Fichier oublié");
+    assert.deepEqual(submission.reponses.map((r) => r.reponse), ["A"]);
+    assert.equal(published.length, 1);
+    assert.equal(published[0].routingKey, "submission.reopened");
+    assert.equal(published[0].payload.submissionId, id);
+    assert.equal(published[0].payload.etudiantId, "e1");
+    assert.equal(published[0].payload.motif, "Fichier oublié");
+  });
+
+  it("permet de soumettre à nouveau la copie rouverte", async () => {
+    const id = await copieSoumise();
+    await reopenSubmission(id, {}, enseignant);
+    await saveAnswers(id, [{ questionId: "q1", reponse: "B" }]);
+    const submission = await submit(id);
+    assert.equal(submission.status, "SOUMISE");
+    assert.deepEqual(published.map((m) => m.routingKey), ["submission.reopened", "submission.completed"]);
+    assert.deepEqual(published[1].payload.reponses, [{ questionId: "q1", reponse: "B" }]);
+  });
+
+  it("rouvre une copie refusée hors délai avec une date limite propre à la copie", async () => {
+    publishAssessment("a1");
+    assessments.get("a1").enseignantId = "ens-1";
+    const { id } = await openSubmission({ assessmentId: "a1", etudiantId: "e1" });
+    expire("a1");
+    await assertCommandError(submit(id), 409);
+    assert.equal(submissions.get(id).status, "REFUSEE_HORS_DELAI");
+
+    const dateLimite = new Date(Date.now() + HOUR).toISOString();
+    await reopenSubmission(id, { dateLimite }, enseignant);
+    const submission = await submit(id);
+    assert.equal(submission.status, "SOUMISE");
+    assert.equal(published.find((m) => m.routingKey === "submission.reopened").payload.dateLimite, dateLimite);
+  });
+
+  it("exige une nouvelle date limite future quand l'évaluation est terminée", async () => {
+    const id = await copieSoumise();
+    expire("a1");
+    await assertCommandError(reopenSubmission(id, {}, enseignant), 400, /dateLimite/);
+    const passee = new Date(Date.now() - HOUR).toISOString();
+    await assertCommandError(reopenSubmission(id, { dateLimite: passee }, enseignant), 400);
+    await assertCommandError(reopenSubmission(id, { dateLimite: "demain" }, enseignant), 400);
+    assert.equal(submissions.get(id).status, "SOUMISE");
+  });
+
+  it("refuse qu'un étudiant, l'administrateur ou un autre enseignant rouvre la copie", async () => {
+    const id = await copieSoumise();
+    await assertCommandError(reopenSubmission(id, {}, { userId: "e1", role: "ETUDIANT" }), 403);
+    await assertCommandError(reopenSubmission(id, {}, { userId: "adm", role: "ADMINISTRATEUR" }), 403);
+    await assertCommandError(reopenSubmission(id, {}, { userId: "ens-2", role: "ENSEIGNANT" }), 403);
+    assert.equal(submissions.get(id).status, "SOUMISE");
+    assert.equal(published.length, 0);
+  });
+
+  it("refuse une copie encore en cours ou dont le résultat est publié", async () => {
+    publishAssessment("a1");
+    assessments.get("a1").enseignantId = "ens-1";
+    const { id: enCours } = await openSubmission({ assessmentId: "a1", etudiantId: "e2" });
+    await assertCommandError(reopenSubmission(enCours, {}, enseignant), 409, /EN_COURS/);
+
+    const id = await copieSoumise();
+    submissions.get(id).resultatPublieAt = new Date();
+    await assertCommandError(reopenSubmission(id, {}, enseignant), 409, /résultat/);
+  });
+
+  it("renvoie null pour une copie inconnue", async () => {
+    assert.equal(await reopenSubmission(new mongoose.Types.ObjectId().toString(), {}, enseignant), null);
   });
 });
