@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, RotateCcw, Save } from "lucide-react";
+import { Check, RotateCcw, Save, Undo2 } from "lucide-react";
 import { Card, CardHeader } from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
@@ -7,6 +7,7 @@ import StateBlock from "../components/ui/StateBlock";
 import { listPending, getGrading, gradeQuestion, validateGrading, retryGrading } from "../api/gradings";
 import { getQuestion } from "../api/questions";
 import { listAssessments } from "../api/assessments";
+import { reopenSubmission } from "../api/submissions";
 import { useAuth } from "../auth/useAuth";
 import { useStudentNames } from "../hooks/useStudentNames";
 import { QUESTION_TYPE_LABELS, formatDateTime } from "../constants/assessment";
@@ -84,6 +85,64 @@ function QuestionGrade({ item, question, onSave, disabled }) {
         </div>
         <Button variant="secondary" onClick={handleSave} disabled={disabled || saving || note === "" || !changed}>
           <Save size={15} /> Enregistrer
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// Règle métier 3 : l'enseignant rouvre une copie pour que l'étudiant la
+// soumette à nouveau. Une nouvelle date limite est exigée si l'évaluation
+// est terminée.
+function ReopenForm({ dateFin, onReopen, disabled }) {
+  const [open, setOpen] = useState(false);
+  const [dateLimite, setDateLimite] = useState("");
+  const [motif, setMotif] = useState("");
+  const ended = dateFin && new Date(dateFin) < new Date();
+
+  if (!open) {
+    return (
+      <Button variant="secondary" className="w-fit" onClick={() => setOpen(true)} disabled={disabled}>
+        <Undo2 size={16} /> Autoriser une resoumission
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-border p-4">
+      <p className="text-sm">
+        La copie redevient modifiable par l'étudiant, qui sera prévenu. La correction en cours est abandonnée.
+      </p>
+      <div className="flex gap-3 flex-wrap">
+        <div className="flex flex-col gap-1.5">
+          <label className="field-label" htmlFor="reopen-date">
+            Nouvelle date limite{ended ? "" : " (facultative)"}
+          </label>
+          <input
+            id="reopen-date"
+            className="field-input"
+            type="datetime-local"
+            value={dateLimite}
+            onChange={(e) => setDateLimite(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+          <label className="field-label" htmlFor="reopen-motif">
+            Motif (facultatif)
+          </label>
+          <input id="reopen-motif" className="field-input" value={motif} onChange={(e) => setMotif(e.target.value)} />
+        </div>
+      </div>
+      {ended && <p className="text-xs text-ink-muted">L'évaluation est terminée : une nouvelle date limite est requise.</p>}
+      <div className="flex gap-2 justify-end">
+        <Button variant="secondary" onClick={() => setOpen(false)} disabled={disabled}>
+          Annuler
+        </Button>
+        <Button
+          onClick={() => onReopen({ dateLimite: dateLimite ? new Date(dateLimite).toISOString() : undefined, motif })}
+          disabled={disabled || (ended && !dateLimite)}
+        >
+          <Undo2 size={16} /> Rouvrir la copie
         </Button>
       </div>
     </div>
@@ -172,6 +231,24 @@ export default function Grading() {
     }
   }
 
+  async function handleReopen(submissionId, etudiantId, values) {
+    setBusy(true);
+    setError(null);
+    try {
+      await reopenSubmission(submissionId, values);
+      // grading-service abandonne la correction de façon asynchrone : on la
+      // retire tout de suite de la liste plutôt que de la recharger.
+      setSelectedId(null);
+      setGrading(null);
+      setPending((list) => list.filter((g) => g.submissionId !== submissionId));
+      setNotice(`Copie rouverte : ${studentName(etudiantId)} peut la modifier et la soumettre à nouveau.`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const failed = grading && ["EN_ATTENTE", "ECHEC_CORRECTION"].includes(grading.status);
   const remaining = grading ? grading.notes.filter((n) => n.note === null).length : 0;
 
@@ -251,6 +328,15 @@ export default function Grading() {
                   </div>
                 </div>
               )}
+
+              <div className="mt-5 pt-4 border-t border-border">
+                <ReopenForm
+                  key={grading.submissionId}
+                  dateFin={assessments[grading.assessmentId]?.dateFin}
+                  onReopen={(values) => handleReopen(grading.submissionId, grading.etudiantId, values)}
+                  disabled={busy}
+                />
+              </div>
             </>
           )}
         </Card>
