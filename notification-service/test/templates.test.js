@@ -44,6 +44,27 @@ describe("buildNotifications", () => {
     assert.match(n.message, /01\/10\/2026 10:00:00 UTC/);
   });
 
+  it("assessment.published sans date limite ne parle pas de « date non précisée »", () => {
+    const [n] = buildNotifications("assessment.published", { assessmentId: "a", titre: "TP" });
+    assert.equal(n.message, "Ouverte dès maintenant, sans date limite.");
+  });
+
+  it("assessment.published avec seulement une date de fin donne la date limite", () => {
+    const [n] = buildNotifications("assessment.published", {
+      assessmentId: "a",
+      dateFin: "2026-10-01T10:00:00.000Z",
+    });
+    assert.equal(n.message, "À rendre avant le 01/10/2026 10:00:00 UTC.");
+  });
+
+  it("assessment.published avec seulement une date de début l'indique", () => {
+    const [n] = buildNotifications("assessment.published", {
+      assessmentId: "a",
+      dateDebut: "2026-10-01T08:00:00.000Z",
+    });
+    assert.equal(n.message, "Ouverte à partir du 01/10/2026 08:00:00 UTC, sans date limite.");
+  });
+
   it("utilise l'identifiant de l'évaluation quand le titre manque", () => {
     const [n] = buildNotifications("assessment.closing_soon", { assessmentId: "a-7" });
     assert.equal(n.titre, "Clôture imminente : a-7");
