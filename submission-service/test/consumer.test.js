@@ -19,8 +19,8 @@ beforeEach(() => {
 afterEach(() => mock.restoreAll());
 
 describe("handleEvent", () => {
-  it("écoute la publication des évaluations et l'issue de la correction", () => {
-    assert.deepEqual(ROUTING_KEYS, ["assessment.published", "grading.failed", "grading.completed"]);
+  it("écoute la publication des évaluations, l'issue de la correction et des résultats", () => {
+    assert.deepEqual(ROUTING_KEYS, ["assessment.published", "grading.failed", "grading.completed", "result.published"]);
   });
 
   it("assessment.published enregistre l'évaluation ouverte", async () => {
@@ -28,9 +28,15 @@ describe("handleEvent", () => {
     mock.method(OpenAssessment, "findByIdAndUpdate", async (id, fields, options) => {
       saved = { id, fields, options };
     });
-    await handleEvent("assessment.published", { assessmentId: "a1", titre: "T", dateFin: "2026-10-21T10:00:00Z" });
+    await handleEvent("assessment.published", {
+      assessmentId: "a1",
+      titre: "T",
+      enseignantId: "ens-1",
+      dateFin: "2026-10-21T10:00:00Z",
+    });
     assert.equal(saved.id, "a1");
     assert.equal(saved.fields.titre, "T");
+    assert.equal(saved.fields.enseignantId, "ens-1");
     assert.equal(saved.options.upsert, true);
   });
 
@@ -45,6 +51,11 @@ describe("handleEvent", () => {
     await handleEvent("grading.failed", { submissionId: submission.id, error: "HTTP 503" });
     await handleEvent("grading.completed", { submissionId: submission.id });
     assert.equal(submission.incidentCorrection, null);
+  });
+
+  it("result.published marque la copie comme corrigée définitivement", async () => {
+    await handleEvent("result.published", { submissionId: submission.id, note: 4 });
+    assert.ok(submission.resultatPublieAt instanceof Date);
   });
 
   it("ignore une copie inconnue ou un événement non géré", async () => {

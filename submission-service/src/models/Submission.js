@@ -31,6 +31,8 @@ const submissionSchema = new Schema(
       type: new Schema({ message: String, survenuAt: Date }, { _id: false }),
       default: null,
     },
+    // Résultat publié (result.published) : la copie ne peut plus être rouverte.
+    resultatPublieAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

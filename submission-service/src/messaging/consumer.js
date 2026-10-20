@@ -1,25 +1,28 @@
 const { getChannel, EXCHANGE } = require("./connection");
 const OpenAssessment = require("../models/OpenAssessment");
-const { recordGradingIncident, clearGradingIncident } = require("../commands");
+const { recordGradingIncident, clearGradingIncident, recordResultPublished } = require("../commands");
 
 const QUEUE = "submission-service.assessment-events";
 const DEAD_LETTER_QUEUE = `${QUEUE}.dead-letters`;
-const ROUTING_KEYS = ["assessment.published", "grading.failed", "grading.completed"];
+const ROUTING_KEYS = ["assessment.published", "grading.failed", "grading.completed", "result.published"];
 
 // AssessmentPublished tient à jour la liste locale des évaluations ouvertes
 // (titre, période) : submission-service n'interroge jamais
 // assessment-service en synchrone pour autoriser une copie.
 // grading.failed / grading.completed : compensation de la Saga (incident de
 // correction affiché sur la copie, puis effacé si la relance aboutit).
+// result.published : la copie est définitivement corrigée, une resoumission
+// n'est plus possible.
 const HANDLERS = {
-  "assessment.published": ({ assessmentId, titre, matiere, dateDebut, dateFin }) =>
+  "assessment.published": ({ assessmentId, titre, matiere, enseignantId, dateDebut, dateFin }) =>
     OpenAssessment.findByIdAndUpdate(
       assessmentId,
-      { titre, matiere, dateDebut, dateFin, publishedAt: new Date() },
+      { titre, matiere, enseignantId, dateDebut, dateFin, publishedAt: new Date() },
       { upsert: true }
     ),
   "grading.failed": recordGradingIncident,
   "grading.completed": clearGradingIncident,
+  "result.published": recordResultPublished,
 };
 
 function handleEvent(routingKey, payload) {

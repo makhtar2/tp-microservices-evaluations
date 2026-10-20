@@ -160,10 +160,19 @@ async function clearGradingIncident({ submissionId }) {
   return submission.save();
 }
 
+// result.published : le résultat de la copie est visible par l'étudiant.
+async function recordResultPublished({ submissionId }) {
+  const submission = await findSubmission(submissionId);
+  if (!submission) return null;
+  submission.resultatPublieAt = new Date();
+  return submission.save();
+}
+
 module.exports = {
   CommandError,
   recordGradingIncident,
   clearGradingIncident,
+  recordResultPublished,
   ensureAccess,
   findSubmission,
   listSubmissions,
