@@ -160,10 +160,19 @@ async function validate(submissionId, userId) {
   return grading;
 }
 
+// Réaction à SubmissionReopened (resoumission autorisée par l'enseignant) :
+// la correction en cours est abandonnée ; la nouvelle soumission en créera
+// une autre. Une correction déjà validée n'est jamais supprimée.
+async function discardForResubmission({ submissionId }) {
+  const { deletedCount } = await Grading.deleteOne({ _id: submissionId, status: { $ne: "VALIDEE" } });
+  return deletedCount > 0;
+}
+
 module.exports = {
   CommandError,
   MAX_ATTEMPTS,
   gradeSubmission,
+  discardForResubmission,
   retryPending,
   retry,
   findGrading,

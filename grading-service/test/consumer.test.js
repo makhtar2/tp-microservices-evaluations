@@ -41,7 +41,7 @@ describe("consumer grading-service", () => {
         ["grading-service.submission-events.dead-letters", true],
       ]
     );
-    assert.deepEqual(bindings, ["submission.completed"]);
+    assert.deepEqual(bindings, ["submission.completed", "submission.reopened"]);
   });
 
   it("conserve un message illisible en dead-letter avec l'erreur, puis l'acquitte", async () => {

@@ -1,13 +1,25 @@
 const { getChannel, EXCHANGE } = require("./connection");
-const { gradeSubmission } = require("../commands");
+const { gradeSubmission, discardForResubmission } = require("../commands");
 
 const QUEUE = "grading-service.submission-events";
 const DEAD_LETTER_QUEUE = `${QUEUE}.dead-letters`;
-const ROUTING_KEYS = ["submission.completed"];
 
-// Consomme SubmissionCompleted (étape 1 de la Saga Soumission →
-// Correction → Notification). Payload attendu :
+// SubmissionCompleted : étape 1 de la Saga Soumission → Correction →
+// Notification. Payload attendu :
 // { submissionId, assessmentId, etudiantId, reponses: [{ questionId, reponse }] }.
+// SubmissionReopened : la copie est rouverte, la correction en cours est
+// abandonnée. Les deux arrivent sur la même queue, donc dans l'ordre.
+const HANDLERS = {
+  "submission.completed": gradeSubmission,
+  "submission.reopened": discardForResubmission,
+};
+const ROUTING_KEYS = Object.keys(HANDLERS);
+
+function handleEvent(routingKey, payload) {
+  const handler = HANDLERS[routingKey];
+  return handler ? handler(payload) : null;
+}
+
 async function startConsumer() {
   try {
     const channel = await getChannel();
@@ -22,7 +34,7 @@ async function startConsumer() {
     channel.consume(QUEUE, async (msg) => {
       if (!msg) return;
       try {
-        await gradeSubmission(JSON.parse(msg.content.toString()));
+        await handleEvent(msg.fields.routingKey, JSON.parse(msg.content.toString()));
         channel.ack(msg);
       } catch (err) {
         console.error("[grading-service] Erreur de traitement d'un événement entrant :", err.message);
@@ -41,4 +53,4 @@ async function startConsumer() {
   }
 }
 
-module.exports = { startConsumer };
+module.exports = { startConsumer, handleEvent, ROUTING_KEYS };
