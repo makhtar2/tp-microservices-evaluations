@@ -275,3 +275,4 @@ npm test
 - [Analyse Domain-Driven Design (DDD)](docs/ddd-analysis.md)
 - [Dossier d'Architecture Technique](docs/architecture.md)
 - [Spécifications OpenAPI / Swagger](docs/openapi/)
+- [Script de démo pour la soutenance](docs/demo-script.md)
