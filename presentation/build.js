@@ -25,8 +25,11 @@ const OUTPUT = path.join(__dirname, "Soutenance-Plateforme-Evaluations.pptx");
   pres.subject = PROJECT.classe;
   pres.company = PROJECT.universite;
 
+  // Plage de slides de chaque section, reprise dans presentation/README.md.
   for (const section of SECTIONS) {
+    const first = pres.slides.length + 1;
     require(`./slides/${section}`)(pres);
+    console.log(`${section.padEnd(16)} slides ${first}-${pres.slides.length}`);
   }
   finalize();
 
