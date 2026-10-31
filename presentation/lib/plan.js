@@ -40,9 +40,9 @@ const REALISATIONS = {
   ],
   aidara: [
     "docker-compose : 15 conteneurs orchestrés",
-    "Dockerfiles et .dockerignore des services",
+    "Dockerfiles (assessment, frontend), .dockerignore",
     "Documentation des 7 services et README racine",
-    "Suite de validation de la documentation et de Docker",
+    "Suite de validation docs et Docker (110 vérifications)",
   ],
 };
 
