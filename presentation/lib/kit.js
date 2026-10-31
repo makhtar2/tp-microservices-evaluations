@@ -23,6 +23,8 @@ function shadow() {
 }
 
 function text(slide, value, opts) {
+  // Une zone de taille négative rend le fichier illisible par PowerPoint.
+  if (!(opts.w > 0 && opts.h > 0)) throw new Error(`Zone de texte invalide (${opts.w} × ${opts.h}) : ${JSON.stringify(value).slice(0, 60)}`);
   slide.addText(value, { fontFace: FONTS.body, color: COLORS.text, margin: 0, valign: "top", ...opts });
 }
 
