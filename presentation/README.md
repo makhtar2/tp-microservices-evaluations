@@ -6,7 +6,8 @@ Développement d'Applications Réparties.
 
 - **Fichier à projeter** : [`Soutenance-Plateforme-Evaluations.pptx`](Soutenance-Plateforme-Evaluations.pptx)
   (34 slides, format 16:9, s'ouvre dans PowerPoint ou Google Slides)
-- **Durée** : environ 26 minutes, démonstration comprise, puis questions
+- **Durée** : environ 27 minutes, démonstration comprise, puis questions
+- **Encadrement** : Fatou Ngom
 - **Notes de l'orateur** : chaque slide contient, dans la zone de notes
   PowerPoint, ce qu'il faut dire. Ce README reprend ces notes et les
   complète.
@@ -28,18 +29,23 @@ qu'il a réalisée**. Sur chaque slide, le bandeau « Présenté par … » en h
 
 La répartition suit le travail réel de chacun, tel qu'il apparaît dans
 `CONTRIBUTING.md` et dans l'historique Git. Le temps de parole est
-équilibré (3 à 5 minutes chacun).
+équilibré : 5 à 6 minutes par membre.
 
 | Partie | Présentateur | Slides | Durée | Sujets |
 |---|---|---|---|---|
-| Ouverture | Fatou Ngom | 1 à 3 | 1 min | titre, déroulé, équipe |
-| 1. Contexte & besoins | Fatou Ngom | 4 à 7 | 3 min | problème, acteurs, fonctionnalités, règles métier |
-| 2. Conception DDD & domaine Questions | Makhtar Wade | 8 à 12 | 4 min | Bounded Contexts, Context Map, question-service et gRPC, frontend |
-| 3. Architecture distribuée | El Hadji Fallou Bousso | 13 à 18 | 5 min | vue d'ensemble, REST/gRPC/AMQP, API Gateway et JWT, bus RabbitMQ, cycles de vie |
-| 4. CQRS & Event Sourcing | Mouhamed Mbacke | 19 à 22 | 4 min | séparation écriture/lecture, Event Store, reconstruction, Read Model |
-| 5. Saga, fiabilité & tests | Mame Bara Samb | 23 à 27 | 4 min | Saga chorégraphiée, compensation, dead-letters, sécurité, resoumission, tests |
+| Ouverture | El Hadji Fallou Bousso | 1 à 3 | 1 min | titre, déroulé, équipe |
+| 1. Contexte & besoins | Makhtar Wade | 4 à 7 | 3 min | problème, acteurs, fonctionnalités, règles métier |
+| 2. Conception DDD & domaine Questions | Makhtar Wade | 8 à 11 | 3 min | Bounded Contexts, Context Map, question-service et gRPC |
+| 3. Architecture distribuée | El Hadji Fallou Bousso | 12 à 17 | 5 min | vue d'ensemble, REST/gRPC/AMQP, API Gateway et JWT, bus RabbitMQ, cycles de vie |
+| 4. CQRS & Event Sourcing | Mouhamed Mbacke | 18 à 21 | 4 min | séparation écriture/lecture, Event Store, reconstruction, Read Model |
+| 5. Saga, fiabilité & tests | Mame Bara Samb | 22 à 27 | 5 min | Saga chorégraphiée, compensation, dead-letters, sécurité, resoumission, frontend, tests |
 | 6. Déploiement & démonstration | Pape Makhtar Aidara | 28 à 31 | 4 min | Docker, documentation, démonstration |
-| Conclusion | Fatou Ngom | 32 à 34 | 2 min | principes démontrés, bilan, perspectives, questions |
+| Conclusion : principes | Mouhamed Mbacke | 32 | 1 min | principes des systèmes distribués démontrés |
+| Conclusion : bilan | Pape Makhtar Aidara | 33 | 1 min | bilan chiffré, enseignements, perspectives |
+| Questions | toute l'équipe | 34 | — | chacun répond sur sa partie |
+
+Temps de parole : Makhtar Wade 6 min, El Hadji Fallou Bousso 6 min,
+Mouhamed Mbacke 5 min, Mame Bara Samb 5 min, Pape Makhtar Aidara 5 min.
 
 ### Ce que chacun a réalisé
 
@@ -50,8 +56,6 @@ La répartition suit le travail réel de chacun, tel qu'il apparaît dans
 | El Hadji Fallou Bousso | Groupe 2 | user-service (JWT, rôles), api-gateway, submission-service, grading-service, notification-service, mise en place de RabbitMQ |
 | Mame Bara Samb | Groupe 2 | compensation de la Saga et dead-letters, resoumission, planification, durcissement sécurité, frontend complet, 234 tests unitaires et 40 tests bout-en-bout |
 | Pape Makhtar Aidara | Groupe 2 | docker-compose (15 conteneurs), Dockerfiles, `.dockerignore`, documentation des services et README racine, suite de validation docs et Docker |
-| Fatou Ngom | — | aucune contribution dans le dépôt à ce jour : elle présente le contexte, les besoins et la conclusion (à confirmer par l'équipe) |
-
 > Pour changer la répartition : modifier `lib/plan.js` (sommaire et slide
 > équipe) et la constante `SPEAKER` en tête du fichier de la partie dans
 > `slides/` (bandeau « Présenté par » et couleur), puis `npm run build`.
@@ -61,15 +65,17 @@ La répartition suit le travail réel de chacun, tel qu'il apparaît dans
 Pour chaque slide : ce qu'elle montre, le message à faire passer, et pour
 chaque partie les questions que le jury risque de poser.
 
-### Ouverture — Fatou Ngom
+### Ouverture — El Hadji Fallou Bousso
 
 | Slide | Contenu | Message |
 |---|---|---|
-| 1 | Titre, université, équipe, schéma de six services autour de RabbitMQ | « Six services autonomes qui communiquent par un bus d'événements » |
-| 2 | Déroulé : six parties, présentateurs, durées | Chacun présente ce qu'il a construit |
+| 1 | Titre, université, équipe, encadrement, schéma de six services autour de RabbitMQ | « Six services autonomes qui communiquent par un bus d'événements » |
+| 2 | Déroulé : six parties, cinq présentateurs, durées | Chacun présente ce qu'il a construit |
 | 3 | Équipe : réalisations de chaque membre | La répartition de la soutenance suit ce tableau |
 
-### Partie 1 — Contexte & besoins (Fatou Ngom)
+### Partie 1 — Contexte & besoins (Makhtar Wade)
+
+Cette partie reprend le cahier de conception, rédigé par Makhtar Wade.
 
 | Slide | Contenu | Message |
 |---|---|---|
@@ -95,7 +101,6 @@ Questions probables :
 | 9 | Six Bounded Contexts (type Cœur, Support ou Générique, service, entités, rôle) | 1 Bounded Context = 1 microservice = 1 base ; pas de modèle partagé |
 | 10 | Context Map : Conformist (JWT), Customer/Supplier (gRPC), Published Language (événements) | Un seul couplage synchrone ; tout le reste passe par des événements |
 | 11 | question-service : CRUD REST, filtres, archivage, types de questions, appel gRPC `SelectQuestions` et extrait du `.proto` | gRPC là où l'enseignant attend la réponse : contrat typé, binaire compact |
-| 12 | Frontend React (captures : sélecteur de questions, banque de questions) | Le navigateur ne parle qu'à l'API Gateway |
 
 Questions probables :
 - *Pourquoi gRPC pour SelectQuestions et pas un événement ?* L'enseignant
@@ -109,12 +114,12 @@ Questions probables :
 
 | Slide | Contenu | Message |
 |---|---|---|
-| 13 | Ouverture de la partie | — |
-| 14 | Vue d'ensemble : navigateur, gateway, 6 services, 6 bases MongoDB, bus RabbitMQ | Une base par service ; un seul appel synchrone entre services ; notification-service n'a pas d'API |
-| 15 | REST, gRPC, AMQP : où et pourquoi ; avantages du synchrone et de l'asynchrone | Synchrone seulement quand l'utilisateur attend ; sinon un événement |
-| 16 | Diagramme de séquence : login, JWT, vérification dans la gateway, `X-User-Id` / `X-User-Role`, contrôle fin dans le service | Authentifier une fois, propager l'identité ; anti-usurpation des en-têtes |
-| 17 | Les 8 routing keys, leur producteur et leurs consommateurs ; capture des queues RabbitMQ | 1 exchange topic, 4 queues + 4 dead-letters, 16 liaisons (relevées sur la stack) |
-| 18 | Cycles de vie de la copie et de la correction, reliés par des événements | Aucune donnée partagée : les réponses voyagent dans `submission.completed` |
+| 12 | Ouverture de la partie | — |
+| 13 | Vue d'ensemble : navigateur, gateway, 6 services, 6 bases MongoDB, bus RabbitMQ | Une base par service ; un seul appel synchrone entre services ; notification-service n'a pas d'API |
+| 14 | REST, gRPC, AMQP : où et pourquoi ; avantages du synchrone et de l'asynchrone | Synchrone seulement quand l'utilisateur attend ; sinon un événement |
+| 15 | Diagramme de séquence : login, JWT, vérification dans la gateway, `X-User-Id` / `X-User-Role`, contrôle fin dans le service | Authentifier une fois, propager l'identité ; anti-usurpation des en-têtes |
+| 16 | Les 8 routing keys, leur producteur et leurs consommateurs ; capture des queues RabbitMQ | 1 exchange topic, 4 queues + 4 dead-letters, 16 liaisons (relevées sur la stack) |
+| 17 | Cycles de vie de la copie et de la correction, reliés par des événements | Aucune donnée partagée : les réponses voyagent dans `submission.completed` |
 
 Questions probables :
 - *Pourquoi un exchange de type topic ?* Chaque service déclare sa queue et
@@ -130,10 +135,10 @@ Questions probables :
 
 | Slide | Contenu | Message |
 |---|---|---|
-| 19 | Ouverture de la partie | — |
-| 20 | Chemin d'écriture (commandes → Write Model → Event Store) et de lecture (projection → Read Model ← requêtes), événements entrants et sortants | Une commande n'écrit pas l'état : elle ajoute un événement |
-| 21 | Journal d'une évaluation (`AssessmentCreated` → … → `ResultPublished`), fonction `applyEvent`, route `POST /assessments/:id/rebuild` | L'historique est la source de vérité ; le Read Model est reconstructible à tout moment |
-| 22 | Captures : statut « Publiée » côté enseignant, note et moyenne côté étudiant | Le résultat n'apparaît qu'après `ResultPublished` (règle métier 6) |
+| 18 | Ouverture de la partie | — |
+| 19 | Chemin d'écriture (commandes → Write Model → Event Store) et de lecture (projection → Read Model ← requêtes), événements entrants et sortants | Une commande n'écrit pas l'état : elle ajoute un événement |
+| 20 | Journal d'une évaluation (`AssessmentCreated` → … → `ResultPublished`), fonction `applyEvent`, route `POST /assessments/:id/rebuild` | L'historique est la source de vérité ; le Read Model est reconstructible à tout moment |
+| 21 | Captures : statut « Publiée » côté enseignant, note et moyenne côté étudiant | Le résultat n'apparaît qu'après `ResultPublished` (règle métier 6) |
 
 Questions probables :
 - *Que contient l'Event Store ?* La collection `AssessmentEvent`, en ajout
@@ -148,10 +153,11 @@ Questions probables :
 
 | Slide | Contenu | Message |
 |---|---|---|
-| 23 | Ouverture de la partie | — |
-| 24 | Saga nominale : étudiant → submission → grading → enseignant, puis `grading.completed` et `result.published` vers trois consommateurs | Pas de coordinateur, transactions locales, réactions idempotentes |
-| 25 | Compensation : `EN_ATTENTE`, relance toutes les 30 s, `ECHEC_CORRECTION` après 5 tentatives, `grading.failed`, incident signalé, relance par l'enseignant ; hors délai ; dead-letters | Une panne ne perd aucune copie ni aucun message |
-| 26 | Durcissement sécurité et resoumission (règle métier 3), capture de la page de correction | Contrôle d'accès à deux niveaux ; resoumission refusée si le résultat est publié |
+| 22 | Ouverture de la partie | — |
+| 23 | Saga nominale : étudiant → submission → grading → enseignant, puis `grading.completed` et `result.published` vers trois consommateurs | Pas de coordinateur, transactions locales, réactions idempotentes |
+| 24 | Compensation : `EN_ATTENTE`, relance toutes les 30 s, `ECHEC_CORRECTION` après 5 tentatives, `grading.failed`, incident signalé, relance par l'enseignant ; hors délai ; dead-letters | Une panne ne perd aucune copie ni aucun message |
+| 25 | Durcissement sécurité et resoumission (règle métier 3), capture de la page de correction | Contrôle d'accès à deux niveaux ; resoumission refusée si le résultat est publié |
+| 26 | Frontend React (captures : sélecteur de questions, banque de questions) ; socle posé par Makhtar Wade, puis complété | Le navigateur ne parle qu'à l'API Gateway |
 | 27 | 234 tests unitaires par service (graphique), 5 scénarios e2e (40 tests), infrastructure jetable | Chaque scénario d'échec est prouvé par un test |
 
 Questions probables :
@@ -182,13 +188,13 @@ Questions probables :
   liens relatifs entre documents, Dockerfiles, `docker compose config`,
   services et volumes déclarés.
 
-### Conclusion — Fatou Ngom
+### Conclusion — Mouhamed Mbacke, Pape Makhtar Aidara, toute l'équipe
 
 | Slide | Contenu | Message |
 |---|---|---|
-| 32 | Les six principes des systèmes distribués appliqués dans le projet | Synthèse : chaque principe renvoie à une partie |
-| 33 | Bilan chiffré (6 services, 6 bases, 3 protocoles, 8 événements, 274 tests, 15 conteneurs), enseignements, perspectives | Pour la production : Kubernetes, observabilité, pattern Outbox, circuit breaker, CI |
-| 34 | Merci, questions, membres, lien du dépôt | Chacun répond sur sa partie |
+| 32 | Les six principes des systèmes distribués appliqués dans le projet (Mouhamed Mbacke) | Synthèse : chaque principe renvoie à une partie |
+| 33 | (Pape Makhtar Aidara) Bilan chiffré (6 services, 6 bases, 3 protocoles, 8 événements, 274 tests, 15 conteneurs), enseignements, perspectives | Pour la production : Kubernetes, observabilité, pattern Outbox, circuit breaker, CI |
+| 34 | Merci, questions, membres, encadrement, lien du dépôt | Chacun répond sur sa partie |
 
 ## Démonstration en direct
 
@@ -222,7 +228,7 @@ scénarios d'échec dans la console.
   pour l'orateur.
 - Passer la parole en annonçant le présentateur suivant ; son nom est sur
   le bandeau de la slide d'ouverture de sa partie.
-- Répéter une fois en chronométrant : environ 26 minutes au total.
+- Répéter une fois en chronométrant : environ 27 minutes au total.
 
 ## Régénérer le support
 
@@ -236,6 +242,9 @@ cd presentation
 npm install
 npm run build          # écrit Soutenance-Plateforme-Evaluations.pptx
 ```
+
+PowerPoint verrouille le fichier tant qu'il est ouvert : le fermer avant
+`npm run build`, ou générer une copie avec `node build.js <fichier>`.
 
 | Fichier | Rôle |
 |---|---|
