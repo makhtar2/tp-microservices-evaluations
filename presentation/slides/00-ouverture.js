@@ -1,6 +1,6 @@
 // Ouverture : titre, sommaire (déroulé par présentateur), équipe.
 const { COLORS, FONTS, PROJECT, SPEAKERS } = require("../lib/theme");
-const { PARTS, REALISATIONS } = require("../lib/plan");
+const { PARTS, CONCLUSION, REALISATIONS } = require("../lib/plan");
 const { W, MARGIN, bullet, text, contentSlide, footer, pill } = require("../lib/kit");
 
 function initials(nom) {
@@ -73,8 +73,8 @@ function agendaSlide(pres) {
     title: "Six parties, six présentateurs",
     speaker: "fatou",
     notes:
-      "Annoncer le déroulé : chaque membre présente la partie qu'il a réalisée. Durée totale d'environ 23 minutes, " +
-      "démonstration comprise, puis questions.",
+      "Annoncer le déroulé : chaque membre présente la partie qu'il a réalisée. Durée totale d'environ 26 minutes, " +
+      "démonstration et conclusion comprises, puis questions.",
   });
   const colW = (W - 2 * MARGIN - 5 * 0.18) / 6;
   PARTS.forEach((part, i) => {
@@ -96,7 +96,7 @@ function agendaSlide(pres) {
   });
   text(slide, [
     { text: "Conclusion  ", options: { bold: true, color: COLORS.ink } },
-    { text: `bilan et perspectives (${SPEAKERS.fatou.nom}), puis questions du jury à toute l'équipe.`, options: { color: COLORS.muted } },
+    { text: `bilan et perspectives (${SPEAKERS[CONCLUSION.speaker].nom}, ${CONCLUSION.minutes} min), puis questions du jury à toute l'équipe.`, options: { color: COLORS.muted } },
   ], { x: MARGIN, y: 6.6, w: W - 2 * MARGIN, h: 0.3, fontSize: 11.5 });
 }
 
