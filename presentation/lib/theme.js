@@ -33,12 +33,12 @@ const PROJECT = {
   universite: "Université Cheikh Ahmadoul Khadim (UCAK)",
   classe: "Licence 3 — Développement d'Applications Réparties",
   annee: "Année universitaire 2025-2026",
+  encadrement: "Fatou Ngom",
   footer: "UCAK · L3 Développement d'Applications Réparties",
 };
 
 // Une couleur par présentateur, reprise sur ses slides (bandeau « Présenté par »).
 const SPEAKERS = {
-  fatou: { nom: "Fatou Ngom", groupe: "Transverse", color: "9333EA" },
   wade: { nom: "Makhtar Wade", groupe: "Groupe 1", color: "0284C7" },
   mbacke: { nom: "Mouhamed Mbacke", groupe: "Groupe 1", color: "0D9488" },
   fallou: { nom: "El Hadji Fallou Bousso", groupe: "Groupe 2", color: "D97706" },
