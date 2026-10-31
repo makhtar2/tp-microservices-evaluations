@@ -189,3 +189,87 @@ Questions probables :
 | 32 | Les six principes des systèmes distribués appliqués dans le projet | Synthèse : chaque principe renvoie à une partie |
 | 33 | Bilan chiffré (6 services, 6 bases, 3 protocoles, 8 événements, 274 tests, 15 conteneurs), enseignements, perspectives | Pour la production : Kubernetes, observabilité, pattern Outbox, circuit breaker, CI |
 | 34 | Merci, questions, membres, lien du dépôt | Chacun répond sur sa partie |
+
+## Démonstration en direct
+
+Le déroulé détaillé (commandes, comptes, ce qu'il faut dire) est dans
+[`docs/demo-script.md`](../docs/demo-script.md). En résumé, à la slide 31 :
+
+1. **Enseignant** (`enseignant@evaluations.local` / `enseignant123`) :
+   crée une évaluation avec le sélecteur de questions et la publie.
+2. **Étudiant** (`etudiant@evaluations.local` / `etudiant123`) : répond,
+   dépose un fichier, soumet.
+3. **Enseignant** : corrige la question ouverte et valide ; l'étudiant voit
+   sa note.
+4. **Panne** : `docker compose stop question-service`, soumettre une copie,
+   montrer la relance dans les logs, `docker compose start question-service`
+   puis relancer la correction depuis la page de correction.
+
+Garder ouverts : l'interface (http://localhost:5173), RabbitMQ
+(http://localhost:15672, `guest` / `guest`, onglet *Queues*) et
+`docker compose logs -f grading-service submission-service notification-service`.
+
+**Plan B** : si Docker ou le réseau pose problème, lancer la suite
+bout-en-bout (`cd e2e && npm test`), qui rejoue le même parcours et les
+scénarios d'échec dans la console.
+
+## Conseils pour le jour J
+
+- Démarrer la stack **avant** la soutenance : sur une machine chargée,
+  RabbitMQ peut mettre plusieurs minutes à devenir disponible.
+- Fermer les autres projets Docker pour libérer de la mémoire.
+- Projeter en mode Présentateur : les notes de chaque slide s'affichent
+  pour l'orateur.
+- Passer la parole en annonçant le présentateur suivant ; son nom est sur
+  le bandeau de la slide d'ouverture de sa partie.
+- Répéter une fois en chronométrant : environ 26 minutes au total.
+
+## Régénérer le support
+
+Le fichier PowerPoint est généré par du code (bibliothèque
+[pptxgenjs](https://gitbrent.github.io/PptxGenJS/)) : textes, schémas et
+mise en page sont dans ce dossier, ce qui permet de corriger une slide et
+de régénérer tout le support.
+
+```bash
+cd presentation
+npm install
+npm run build          # écrit Soutenance-Plateforme-Evaluations.pptx
+```
+
+| Fichier | Rôle |
+|---|---|
+| `build.js` | assemble les parties dans l'ordre et écrit le `.pptx` |
+| `lib/theme.js` | couleurs (alignées sur l'interface Evalio), polices, présentateurs |
+| `lib/plan.js` | déroulé : parties, présentateurs, durées, réalisations |
+| `lib/kit.js` | composants : gabarits de slides, boîtes, flèches, cartes, captures, tableaux |
+| `slides/00-ouverture.js` … `slides/07-conclusion.js` | une partie par fichier |
+| `assets/captures/` | captures d'écran utilisées dans les slides |
+
+Mettre à jour les captures (stack Docker lancée, comptes de démonstration
+créés) :
+
+```bash
+cd e2e && node ui/parcours-interface.js          # parcours UI → e2e/logs/ui/
+cp e2e/logs/ui/*.png presentation/assets/captures/
+cd presentation && node scripts/capture-rabbitmq.js   # captures RabbitMQ
+```
+
+Relire le rendu sans ouvrir PowerPoint (Windows, PowerPoint installé) :
+`powershell -File scripts/apercu.ps1` exporte chaque slide en PNG dans
+`apercu/` (dossier ignoré par Git).
+
+## Origine des chiffres
+
+Tous les chiffres du support sont relevés sur le dépôt ou sur la stack en
+fonctionnement :
+
+| Chiffre | Source |
+|---|---|
+| 8 événements, 4 queues + 4 dead-letters, 16 liaisons | API d'administration RabbitMQ (`/api/bindings`) sur la stack Docker |
+| 234 tests unitaires (grading 58, assessment 53, submission 40, user 33, api-gateway 19, notification 17, question 14) | appels `it(` / `test(` dans `*/test/*.test.js` |
+| 40 tests bout-en-bout en 5 scénarios | `e2e/scenarios/*.test.js` |
+| 110 vérifications docs et Docker | sortie de `node e2e/scripts/test-docs-and-docker.js` |
+| 15 conteneurs, 8 volumes, 7 healthchecks | `docker-compose.yml` |
+| Relance toutes les 30 s, 5 tentatives | `GRADING_RETRY_INTERVAL_MS`, `GRADING_MAX_ATTEMPTS` (grading-service) |
+| Captures d'écran | `e2e/ui/parcours-interface.js` (8 étapes réussies) et `scripts/capture-rabbitmq.js` |
