@@ -11,6 +11,7 @@ const SECTIONS = [
   "02-conception",
   "03-architecture",
   "04-cqrs",
+  "05-saga",
 ];
 
 const OUTPUT = path.join(__dirname, "Soutenance-Plateforme-Evaluations.pptx");
