@@ -8,6 +8,7 @@ const { finalize } = require("./lib/kit");
 const SECTIONS = [
   "00-ouverture",
   "01-contexte",
+  "02-conception",
 ];
 
 const OUTPUT = path.join(__dirname, "Soutenance-Plateforme-Evaluations.pptx");
