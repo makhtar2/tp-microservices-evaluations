@@ -276,3 +276,4 @@ npm test
 - [Dossier d'Architecture Technique](docs/architecture.md)
 - [Spécifications OpenAPI / Swagger](docs/openapi/)
 - [Script de démo pour la soutenance](docs/demo-script.md)
+- [Support de soutenance (PowerPoint) et répartition par présentateur](presentation/README.md)
