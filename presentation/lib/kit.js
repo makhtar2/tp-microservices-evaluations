@@ -108,7 +108,7 @@ function box(pres, slide, { x, y, w, h, label, sub, fill = COLORS.white, line = 
 }
 
 // Flèche droite de (x1, y1) à (x2, y2), avec étiquette optionnelle.
-function arrow(pres, slide, x1, y1, x2, y2, { color = COLORS.muted, width = 1.5, dash, both = false, label, labelColor, labelOffset = 0 } = {}) {
+function arrow(pres, slide, x1, y1, x2, y2, { color = COLORS.muted, width = 1.5, dash, both = false, label, labelColor, labelOffset = 0, labelW = 2.4, labelSize = 9 } = {}) {
   slide.addShape(pres.shapes.LINE, {
     x: Math.min(x1, x2), y: Math.min(y1, y2), w: Math.abs(x2 - x1), h: Math.abs(y2 - y1),
     flipH: x2 < x1, flipV: y2 < y1,
@@ -118,7 +118,7 @@ function arrow(pres, slide, x1, y1, x2, y2, { color = COLORS.muted, width = 1.5,
     const mx = (x1 + x2) / 2;
     const my = (y1 + y2) / 2 + labelOffset;
     text(slide, label, {
-      x: mx - 1.2, y: my - 0.16, w: 2.4, h: 0.3, fontSize: 9, align: "center", valign: "middle",
+      x: mx - labelW / 2, y: my - 0.16, w: labelW, h: 0.3, fontSize: labelSize, align: "center", valign: "middle",
       color: labelColor || color, bold: true, fill: { color: COLORS.bg },
     });
   }
