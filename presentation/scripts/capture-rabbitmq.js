@@ -15,20 +15,34 @@ const CHROME =
     : "google-chrome");
 const BASE = process.env.RABBITMQ_UI_URL || "http://localhost:15672";
 const OUT = path.join(__dirname, "../assets/captures");
-const PORT = 9334;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Une visite par page, plusieurs captures. `zoom` : texte contenu dans le
+// tableau à cadrer (capture nette, échelle 2) ; sans zoom, toute la fenêtre.
+// `width` : part de la largeur du tableau à garder (colonnes de gauche).
 const PAGES = [
-  { name: "rabbitmq-queues", hash: "#/queues" },
-  // Section « Bindings » dépliée : routing keys → queues des services.
-  { name: "rabbitmq-exchange", hash: "#/exchanges/%2F/evaluations.events", expand: "Bindings" },
+  {
+    hash: "#/queues",
+    shots: [
+      { name: "rabbitmq-queues" },
+      { name: "rabbitmq-queues-zoom", zoom: "Message rates" },
+      { name: "rabbitmq-queues-noms", zoom: "Message rates", width: 0.6 },
+    ],
+  },
+  {
+    // Section « Bindings » dépliée : routing keys → queues des services.
+    hash: "#/exchanges/%2F/evaluations.events",
+    expand: "Bindings",
+    shots: [{ name: "rabbitmq-exchange" }, { name: "rabbitmq-bindings-zoom", zoom: "Routing key" }],
+  },
 ];
 
 (async () => {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), "chrome-rabbitmq-"));
   const chrome = spawn(CHROME, [
     "--headless=new",
-    `--remote-debugging-port=${PORT}`,
+    // Port choisi par Chrome, lu ensuite dans DevToolsActivePort.
+    "--remote-debugging-port=0",
     `--user-data-dir=${profile}`,
     "--no-first-run",
     "about:blank",
@@ -38,7 +52,8 @@ const PAGES = [
   for (let i = 0; i < 40 && !target; i++) {
     await sleep(250);
     try {
-      const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json();
+      const port = fs.readFileSync(path.join(profile, "DevToolsActivePort"), "utf8").split("\n")[0];
+      const list = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
       target = list.find((t) => t.type === "page");
     } catch {}
   }
@@ -85,9 +100,30 @@ const PAGES = [
         });
         await sleep(1500);
       }
-      const { data } = await send("Page.captureScreenshot", { format: "png" });
-      fs.writeFileSync(path.join(OUT, `${page.name}.png`), Buffer.from(data, "base64"));
-      console.log(`OK  ${page.name}.png`);
+      for (const shot of page.shots) {
+        const params = { format: "png" };
+        if (shot.zoom) {
+          const { result } = await send("Runtime.evaluate", {
+            expression: `(() => {
+              // Le premier tableau de données (table.list) visible qui contient le texte voulu.
+              const el = [...document.querySelectorAll("table.list")].find(
+                (t) => t.innerText.includes(${JSON.stringify(shot.zoom)}) && t.getBoundingClientRect().width > 0
+              );
+              const r = el.getBoundingClientRect();
+              return JSON.stringify({ x: r.left + scrollX, y: r.top + scrollY, width: r.width, height: r.height });
+            })()`,
+            returnByValue: true,
+          });
+          if (result.value === undefined) throw new Error(`${shot.name} : tableau introuvable`);
+          const r = JSON.parse(result.value);
+          const width = shot.width ? r.width * shot.width : r.width + 16;
+          params.clip = { x: r.x - 8, y: r.y - 8, width, height: r.height + 16, scale: 2 };
+          params.captureBeyondViewport = true;
+        }
+        const { data } = await send("Page.captureScreenshot", params);
+        fs.writeFileSync(path.join(OUT, `${shot.name}.png`), Buffer.from(data, "base64"));
+        console.log(`OK  ${shot.name}.png`);
+      }
     }
   } finally {
     ws.close();
