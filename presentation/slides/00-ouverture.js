@@ -1,6 +1,6 @@
 // Ouverture : titre, sommaire (déroulé par présentateur), équipe.
 const { COLORS, FONTS, PROJECT, SPEAKERS } = require("../lib/theme");
-const { PARTS, CONCLUSION, REALISATIONS } = require("../lib/plan");
+const { OUVERTURE, PARTS, CONCLUSION, REALISATIONS } = require("../lib/plan");
 const { W, MARGIN, bullet, text, contentSlide, footer, pill } = require("../lib/kit");
 
 function initials(nom) {
@@ -51,17 +51,16 @@ function titleSlide(pres) {
   const equipe = [
     ["Groupe 1", `${SPEAKERS.wade.nom} · ${SPEAKERS.mbacke.nom}`],
     ["Groupe 2", `${SPEAKERS.fallou.nom} · ${SPEAKERS.bara.nom} · ${SPEAKERS.aidara.nom}`],
-    ["", SPEAKERS.fatou.nom],
+    ["Encadrement", PROJECT.encadrement],
   ];
-  // Pas de fragment vide : PowerPoint refuse d'ouvrir un run sans texte.
   text(slide, equipe.flatMap(([groupe, noms]) => [
-    ...(groupe ? [{ text: `${groupe}  `, options: { bold: true, color: COLORS.mint } }] : []),
+    { text: `${groupe}  `, options: { bold: true, color: COLORS.mint } },
     { text: noms, options: { color: COLORS.white, breakLine: true } },
   ]), { x: MARGIN, y: 5.35, w: 7.4, h: 1.2, fontSize: 12.5, paraSpaceAfter: 4 });
 
   footer(pres, slide, { dark: true });
   slide.addNotes(
-    "Ouverture (Fatou Ngom). Présenter l'équipe, l'université et le sujet : une plateforme de gestion des évaluations " +
+    "Ouverture. Présenter l'équipe, l'université et le sujet : une plateforme de gestion des évaluations " +
       "construite en microservices. Le schéma de droite résume l'idée centrale : six services autonomes qui communiquent " +
       "par un bus d'événements RabbitMQ."
   );
@@ -70,8 +69,8 @@ function titleSlide(pres) {
 function agendaSlide(pres) {
   const slide = contentSlide(pres, {
     part: "Déroulé de la soutenance",
-    title: "Six parties, six présentateurs",
-    speaker: "fatou",
+    title: "Six parties, cinq présentateurs",
+    speaker: OUVERTURE.speaker,
     notes:
       "Annoncer le déroulé : chaque membre présente la partie qu'il a réalisée. Durée totale d'environ 26 minutes, " +
       "démonstration et conclusion comprises, puis questions.",
@@ -96,7 +95,7 @@ function agendaSlide(pres) {
   });
   text(slide, [
     { text: "Conclusion  ", options: { bold: true, color: COLORS.ink } },
-    { text: `bilan et perspectives (${SPEAKERS[CONCLUSION.speaker].nom}, ${CONCLUSION.minutes} min), puis questions du jury à toute l'équipe.`, options: { color: COLORS.muted } },
+    { text: CONCLUSION.map((c) => `${c.titre.toLowerCase()} (${SPEAKERS[c.speaker].nom}, ${c.minutes} min)`).join(", ") + ", puis questions du jury à toute l'équipe.", options: { color: COLORS.muted } },
   ], { x: MARGIN, y: 6.6, w: W - 2 * MARGIN, h: 0.3, fontSize: 11.5 });
 }
 
@@ -104,19 +103,20 @@ function teamSlide(pres) {
   const slide = contentSlide(pres, {
     part: "L'équipe",
     title: "Qui a fait quoi",
-    speaker: "fatou",
+    speaker: OUVERTURE.speaker,
     notes:
       "Présenter rapidement chaque membre et ses réalisations. La répartition de la présentation suit exactement ce " +
       "tableau : chacun présente ce qu'il a construit.",
   });
-  const keys = ["wade", "mbacke", "fallou", "bara", "aidara", "fatou"];
+  const keys = ["wade", "mbacke", "fallou", "bara", "aidara"];
   const gap = 0.22;
   const cw = (W - 2 * MARGIN - 2 * gap) / 3;
   const ch = 2.42;
   keys.forEach((key, i) => {
     const speaker = SPEAKERS[key];
-    const part = PARTS.find((p) => p.speaker === key);
-    const x = MARGIN + (i % 3) * (cw + gap);
+    const parts = PARTS.filter((p) => p.speaker === key);
+    // Seconde rangée (2 cartes) centrée.
+    const x = i < 3 ? MARGIN + i * (cw + gap) : MARGIN + (cw + gap) / 2 + (i - 3) * (cw + gap);
     const y = 1.6 + Math.floor(i / 3) * (ch + 0.2);
     slide.addShape(pres.shapes.ROUNDED_RECTANGLE, {
       x, y, w: cw, h: ch, rectRadius: 0.08, fill: { color: COLORS.white }, line: { color: COLORS.line, width: 0.75 },
@@ -124,7 +124,8 @@ function teamSlide(pres) {
     slide.addShape(pres.shapes.OVAL, { x: x + 0.2, y: y + 0.2, w: 0.62, h: 0.62, fill: { color: speaker.color }, line: { color: speaker.color, width: 0 } });
     text(slide, initials(speaker.nom), { x: x + 0.2, y: y + 0.2, w: 0.62, h: 0.62, fontSize: 14, bold: true, color: COLORS.white, align: "center", valign: "middle" });
     text(slide, speaker.nom, { x: x + 0.95, y: y + 0.18, w: cw - 1.1, h: 0.36, fontSize: 14, bold: true, color: COLORS.ink, valign: "middle" });
-    text(slide, `${speaker.groupe} · Partie ${part.n} : ${part.titre}`, {
+    const libelle = parts.length === 1 ? `Partie ${parts[0].n} : ${parts[0].titre}` : `Parties ${parts.map((p) => p.n).join(" et ")}`;
+    text(slide, `${speaker.groupe} · ${libelle}`, {
       x: x + 0.95, y: y + 0.52, w: cw - 1.1, h: 0.3, fontSize: 9.5, color: speaker.color, bold: true, valign: "middle",
     });
     text(slide, REALISATIONS[key].map((r) => ({ text: r, options: { bullet: bullet(speaker.color), breakLine: true } })), {

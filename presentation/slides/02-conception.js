@@ -1,12 +1,12 @@
 // Partie 2 — Conception DDD & domaine Questions (Makhtar Wade).
-// Sources : docs/ddd-analysis.md, docs/protos/question.proto, frontend/.
+// Sources : docs/ddd-analysis.md, docs/protos/question.proto.
 const { COLORS, FONTS, SPEAKERS } = require("../lib/theme");
-const { W, MARGIN, text, contentSlide, sectionSlide, box, arrow, pill, card, bullets, screenshot } = require("../lib/kit");
+const { W, MARGIN, text, contentSlide, sectionSlide, box, arrow, pill, card } = require("../lib/kit");
 
 const SPEAKER = "wade";
 const PART = "Partie 2 · Conception DDD & domaine Questions";
 const ACCENT = SPEAKERS[SPEAKER].color;
-const TYPE_COLORS = { Cœur: COLORS.group1, Support: COLORS.muted, Générique: SPEAKERS.fatou.color };
+const TYPE_COLORS = { Cœur: COLORS.group1, Support: COLORS.muted, Générique: "9333EA" };
 
 function contextsSlide(pres) {
   const slide = contentSlide(pres, {
@@ -156,36 +156,15 @@ function questionSlide(pres) {
   ], { x: x0, y: 5.75, w: 7.1, h: 0.75, fontSize: 12.5 });
 }
 
-function frontendSlide(pres) {
-  const slide = contentSlide(pres, {
-    part: PART,
-    title: "Frontend React : une seule porte d'entrée, l'API Gateway",
-    speaker: SPEAKER,
-    notes:
-      "Le frontend est une application React construite avec Vite et Tailwind CSS. Le socle (structure, design, " +
-      "pages Questions et Évaluations) a été posé au premier sprint, puis complété par Mame Bara Samb avec les vues " +
-      "étudiant, correction et administration. Point clé pour l'architecture : le navigateur ne parle qu'à l'API Gateway, " +
-      "jamais directement aux microservices.",
-  });
-  screenshot(pres, slide, { file: "03-selecteur-de-questions.png", x: MARGIN, y: 1.6, w: 5.95, caption: "Création d'une évaluation avec le sélecteur de questions" });
-  screenshot(pres, slide, { file: "02-banque-de-questions.png", x: MARGIN + 6.2, y: 1.6, w: 5.95, caption: "Banque de questions" });
-  const techs = ["React 19", "Vite", "Tailwind CSS v4", "Routes protégées par rôle", "Tous les appels via /api → api-gateway"];
-  let x = MARGIN;
-  techs.forEach((t) => {
-    x += pill(pres, slide, { x, y: 6.45, label: t, color: ACCENT }) + 0.15;
-  });
-}
-
 module.exports = (pres) => {
   sectionSlide(pres, {
     number: 2,
     title: "Conception DDD & domaine Questions",
     subtitle: "Du domaine métier au découpage en services",
     speaker: SPEAKER,
-    topics: ["Sous-domaines et Bounded Contexts", "Context Map", "question-service et gRPC", "Frontend React"],
+    topics: ["Sous-domaines et Bounded Contexts", "Context Map", "question-service et gRPC"],
   });
   contextsSlide(pres);
   contextMapSlide(pres);
   questionSlide(pres);
-  frontendSlide(pres);
 };

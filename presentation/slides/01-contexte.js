@@ -1,9 +1,9 @@
-// Partie 1 — Contexte & besoins (Fatou Ngom).
+// Partie 1 — Contexte & besoins (Makhtar Wade).
 // Source : docs/cahier-de-conception.md.
 const { COLORS, FONTS, SPEAKERS } = require("../lib/theme");
 const { W, MARGIN, text, contentSlide, sectionSlide, card, pill } = require("../lib/kit");
 
-const SPEAKER = "fatou";
+const SPEAKER = "wade";
 const PART = "Partie 1 · Contexte & besoins";
 const ACCENT = SPEAKERS[SPEAKER].color;
 

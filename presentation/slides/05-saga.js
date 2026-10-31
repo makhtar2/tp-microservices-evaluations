@@ -1,6 +1,6 @@
 // Partie 5 — Saga, fiabilité & tests (Mame Bara Samb).
 // Sources : docs/architecture.md (Saga), grading-service (relance),
-// submission-service (resoumission, dead-letters), */test, e2e/.
+// submission-service (resoumission, dead-letters), frontend/, */test, e2e/.
 const { COLORS, FONTS, SPEAKERS } = require("../lib/theme");
 const { W, MARGIN, text, contentSlide, sectionSlide, box, arrow, pill, card, screenshot, table } = require("../lib/kit");
 
@@ -158,6 +158,26 @@ function securitySlide(pres) {
   screenshot(pres, slide, { file: "08-correction-copie.png", x: rx + (rw - sw) / 2, y: 3.6, w: sw, caption: "Page de correction : bouton « Autoriser une resoumission »" });
 }
 
+function frontendSlide(pres) {
+  const slide = contentSlide(pres, {
+    part: PART,
+    title: "Frontend React : une seule porte d'entrée, l'API Gateway",
+    speaker: SPEAKER,
+    notes:
+      "Le frontend est une application React construite avec Vite et Tailwind CSS. Le socle (structure, design, " +
+      "pages Questions et Évaluations) a été posé par Makhtar Wade au premier sprint, puis complété avec la connexion " +
+      "réelle, les vues étudiant, correction et administration. Point clé pour l'architecture : le navigateur ne parle " +
+      "qu'à l'API Gateway, jamais directement aux microservices.",
+  });
+  screenshot(pres, slide, { file: "03-selecteur-de-questions.png", x: MARGIN, y: 1.6, w: 5.95, caption: "Création d'une évaluation avec le sélecteur de questions" });
+  screenshot(pres, slide, { file: "02-banque-de-questions.png", x: MARGIN + 6.2, y: 1.6, w: 5.95, caption: "Banque de questions" });
+  const techs = ["React 19", "Vite", "Tailwind CSS v4", "Routes protégées par rôle", "Tous les appels via /api → api-gateway"];
+  let x = MARGIN;
+  techs.forEach((t) => {
+    x += pill(pres, slide, { x, y: 6.45, label: t, color: ACCENT }) + 0.15;
+  });
+}
+
 function testsSlide(pres) {
   const slide = contentSlide(pres, {
     part: PART,
@@ -205,10 +225,11 @@ module.exports = (pres) => {
     title: "Saga, fiabilité & tests",
     subtitle: "Rester cohérent quand un service tombe, et le prouver",
     speaker: SPEAKER,
-    topics: ["La Saga chorégraphiée", "Compensation et dead-letters", "Sécurité et resoumission", "Tests unitaires et bout-en-bout"],
+    topics: ["La Saga chorégraphiée", "Compensation et dead-letters", "Sécurité et resoumission", "Frontend React", "Tests unitaires et bout-en-bout"],
   });
   sagaSlide(pres);
   compensationSlide(pres);
   securitySlide(pres);
+  frontendSlide(pres);
   testsSlide(pres);
 };
