@@ -16,7 +16,9 @@ const SECTIONS = [
   "07-conclusion",
 ];
 
-const OUTPUT = path.join(__dirname, "Soutenance-Plateforme-Evaluations.pptx");
+// Chemin de sortie optionnel (node build.js <fichier>), utile quand le
+// support est ouvert dans PowerPoint, qui verrouille le fichier.
+const OUTPUT = path.resolve(process.argv[2] || path.join(__dirname, "Soutenance-Plateforme-Evaluations.pptx"));
 
 (async () => {
   const pres = new PptxGenJS();
