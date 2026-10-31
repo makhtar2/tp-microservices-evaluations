@@ -6,7 +6,7 @@ const PARTS = [
   { n: 1, titre: "Contexte & besoins", speaker: "fatou", minutes: 3, sujets: ["Problème et objectifs", "Acteurs et fonctionnalités", "Règles métier"] },
   { n: 2, titre: "Conception DDD & domaine Questions", speaker: "wade", minutes: 4, sujets: ["Sous-domaines et Bounded Contexts", "Context Map", "question-service et gRPC", "Frontend React"] },
   { n: 3, titre: "Architecture distribuée", speaker: "fallou", minutes: 5, sujets: ["Vue d'ensemble", "REST, gRPC et AMQP", "API Gateway et JWT", "Bus d'événements RabbitMQ", "Soumission et correction"] },
-  { n: 4, titre: "CQRS & Event Sourcing", speaker: "mbacke", minutes: 3, sujets: ["Séparation écriture / lecture", "Event Store et reconstruction", "Cycle de vie d'une évaluation"] },
+  { n: 4, titre: "CQRS & Event Sourcing", speaker: "mbacke", minutes: 3, sujets: ["Séparation écriture / lecture", "Event Store et reconstruction", "Le Read Model en action"] },
   { n: 5, titre: "Saga, fiabilité & tests", speaker: "bara", minutes: 4, sujets: ["Saga chorégraphiée", "Compensation et dead-letters", "Sécurité et resoumission", "Tests unitaires et bout-en-bout"] },
   { n: 6, titre: "Déploiement & démonstration", speaker: "aidara", minutes: 4, sujets: ["Conteneurisation Docker", "Documentation et contrats", "Démonstration de l'interface"] },
 ];
