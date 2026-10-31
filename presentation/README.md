@@ -125,3 +125,67 @@ Questions probables :
 - *Pourquoi ne pas vérifier le JWT dans chaque service ?* La gateway le fait
   une fois ; les services appliquent seulement les règles fines à partir
   des en-têtes d'identité, que la gateway est seule à pouvoir poser.
+
+### Partie 4 — CQRS & Event Sourcing (Mouhamed Mbacke)
+
+| Slide | Contenu | Message |
+|---|---|---|
+| 19 | Ouverture de la partie | — |
+| 20 | Chemin d'écriture (commandes → Write Model → Event Store) et de lecture (projection → Read Model ← requêtes), événements entrants et sortants | Une commande n'écrit pas l'état : elle ajoute un événement |
+| 21 | Journal d'une évaluation (`AssessmentCreated` → … → `ResultPublished`), fonction `applyEvent`, route `POST /assessments/:id/rebuild` | L'historique est la source de vérité ; le Read Model est reconstructible à tout moment |
+| 22 | Captures : statut « Publiée » côté enseignant, note et moyenne côté étudiant | Le résultat n'apparaît qu'après `ResultPublished` (règle métier 6) |
+
+Questions probables :
+- *Que contient l'Event Store ?* La collection `AssessmentEvent`, en ajout
+  seul : `assessmentId`, `type`, `payload`, date. Huit types d'événements.
+- *Pourquoi `GradingCompleted` ne change-t-il rien de visible ?* Une note
+  terminée n'est pas encore publiée : seul `ResultPublished` ajoute le
+  résultat au Read Model.
+- *Quel intérêt du rebuild ?* Après un incident ou un changement de
+  projection, on recalcule l'état exact en rejouant les événements.
+
+### Partie 5 — Saga, fiabilité & tests (Mame Bara Samb)
+
+| Slide | Contenu | Message |
+|---|---|---|
+| 23 | Ouverture de la partie | — |
+| 24 | Saga nominale : étudiant → submission → grading → enseignant, puis `grading.completed` et `result.published` vers trois consommateurs | Pas de coordinateur, transactions locales, réactions idempotentes |
+| 25 | Compensation : `EN_ATTENTE`, relance toutes les 30 s, `ECHEC_CORRECTION` après 5 tentatives, `grading.failed`, incident signalé, relance par l'enseignant ; hors délai ; dead-letters | Une panne ne perd aucune copie ni aucun message |
+| 26 | Durcissement sécurité et resoumission (règle métier 3), capture de la page de correction | Contrôle d'accès à deux niveaux ; resoumission refusée si le résultat est publié |
+| 27 | 234 tests unitaires par service (graphique), 5 scénarios e2e (40 tests), infrastructure jetable | Chaque scénario d'échec est prouvé par un test |
+
+Questions probables :
+- *Chorégraphie ou orchestration ?* Chorégraphie : peu de services, et
+  l'objectif était de montrer le couplage faible. Inconvénient assumé : le
+  flux complet se lit dans la documentation plutôt que dans un seul code.
+- *Comment éviter les doublons si un événement est rejoué ?* Les réactions
+  sont idempotentes (par exemple, une correction déjà créée pour une copie
+  n'est pas recréée).
+- *Que devient un message qui fait planter un consommateur ?* Il est copié
+  dans `<queue>.dead-letters` avec l'erreur et la date, puis acquitté ; on
+  peut le rejouer depuis l'interface RabbitMQ.
+
+### Partie 6 — Déploiement & démonstration (Pape Makhtar Aidara)
+
+| Slide | Contenu | Message |
+|---|---|---|
+| 28 | Ouverture de la partie | — |
+| 29 | Les 15 conteneurs par couche, réseau `evaluations-net`, 8 volumes, 7 healthchecks, commandes de démarrage | Toute la plateforme démarre avec docker compose, dans le bon ordre |
+| 30 | README racine et par service, contrats OpenAPI et gRPC, documents de conception ; sortie réelle de la suite de validation (110/110) | La documentation est vérifiée automatiquement |
+| 31 | Quatre captures du parcours et les quatre étapes de la démo live | Les captures viennent du test d'interface ; la démo rejoue le même parcours |
+
+Questions probables :
+- *Comment les services attendent-ils leur base ?* `depends_on` avec
+  `condition: service_healthy` : un service ne démarre que lorsque sa base
+  et RabbitMQ répondent à leur healthcheck.
+- *Que vérifie la suite de validation ?* Présence et contenu des README,
+  liens relatifs entre documents, Dockerfiles, `docker compose config`,
+  services et volumes déclarés.
+
+### Conclusion — Fatou Ngom
+
+| Slide | Contenu | Message |
+|---|---|---|
+| 32 | Les six principes des systèmes distribués appliqués dans le projet | Synthèse : chaque principe renvoie à une partie |
+| 33 | Bilan chiffré (6 services, 6 bases, 3 protocoles, 8 événements, 274 tests, 15 conteneurs), enseignements, perspectives | Pour la production : Kubernetes, observabilité, pattern Outbox, circuit breaker, CI |
+| 34 | Merci, questions, membres, lien du dépôt | Chacun répond sur sa partie |
