@@ -1,10 +1,9 @@
 // Page de garde, plan et répartition du travail.
 const fs = require("node:fs");
 const path = require("node:path");
-const NOTES = require("../lib/notes.json");
 const { COLORS, FONTS, PROJECT, SPEAKERS } = require("../lib/theme");
 const { OUVERTURE, PARTS, REALISATIONS } = require("../lib/plan");
-const { W, text, contentSlide, table } = require("../lib/kit");
+const { addNotes, W, text, contentSlide, table } = require("../lib/kit");
 
 const LOGO = path.join(__dirname, "../assets/logo-ucak.png");
 
@@ -34,7 +33,7 @@ function titleSlide(pres) {
     { text: PROJECT.encadrement },
   ], { x: W - 7, y: 4.5, w: 5, h: 0.7, fontSize: 14, align: "right" });
   center(PROJECT.annee, 6.6, 0.35, { fontSize: 13, color: COLORS.muted });
-  slide.addNotes(NOTES[pres.slides.length]);
+  addNotes(pres, slide);
 }
 
 function planSlide(pres) {

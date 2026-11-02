@@ -1,8 +1,7 @@
 // Conclusion : principes appliqués, bilan et perspectives, remerciements.
-const NOTES = require("../lib/notes.json");
 const { COLORS, FONTS } = require("../lib/theme");
 const { CONCLUSION } = require("../lib/plan");
-const { W, H, MARGIN, text, contentSlide, card, table } = require("../lib/kit");
+const { addNotes, W, H, MARGIN, text, contentSlide, card, table } = require("../lib/kit");
 
 const PART = "Conclusion";
 const [PRINCIPES, BILAN] = CONCLUSION;
@@ -58,7 +57,7 @@ function thanksSlide(pres) {
   const slide = pres.addSlide();
   slide.background = { color: COLORS.deep };
   text(slide, "Merci pour votre aimable attention", { x: 1, y: H / 2 - 0.6, w: W - 2, h: 1.2, fontSize: 36, fontFace: FONTS.title, color: COLORS.white, align: "center", valign: "middle" });
-  slide.addNotes(NOTES[pres.slides.length]);
+  addNotes(pres, slide);
 }
 
 module.exports = (pres) => {

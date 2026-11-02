@@ -1,7 +1,6 @@
 // Composants des slides. Toutes les mesures sont en pouces (format 16:9,
 // 13,333 × 7,5).
 const path = require("node:path");
-const NOTES = require("./notes.json");
 const { COLORS, FONTS, PROJECT, SPEAKERS } = require("./theme");
 
 const W = 13.333;
@@ -12,6 +11,16 @@ const CAPTURES = path.join(__dirname, "../assets/captures");
 // Style de puce commun : rond plein de la couleur d'accent, retrait serré.
 function bullet(color) {
   return { code: "2022", color, indent: 12 };
+}
+
+// Notes de l'orateur : fichier local, absent du dépôt.
+let notes = {};
+function setNotes(value) {
+  notes = value;
+}
+function addNotes(pres, slide) {
+  const note = notes[pres.slides.length];
+  if (note) slide.addNotes(note);
 }
 
 function text(slide, value, opts) {
@@ -36,7 +45,7 @@ function contentSlide(pres, { part, title, speaker }) {
   text(slide, title, { x: MARGIN, y: 0.42, w: W - 2 * MARGIN, h: 0.68, fontSize: 28, fontFace: FONTS.title, color: COLORS.deep, valign: "middle" });
   slide.addShape(pres.shapes.LINE, { x: MARGIN, y: 1.15, w: W - 2 * MARGIN, h: 0, line: { color: COLORS.mint, width: 1 } });
   footer(pres, slide, { speaker, part });
-  slide.addNotes(NOTES[pres.slides.length]);
+  addNotes(pres, slide);
   return slide;
 }
 
@@ -51,7 +60,7 @@ function sectionSlide(pres, { number, title, speaker, topics = [] }) {
   text(slide, title, { x: 4.6, y: 1.75, w: 8.1, h: 1.35, fontSize: 32, color: COLORS.deep, fontFace: FONTS.title, valign: "bottom" });
   slide.addShape(pres.shapes.LINE, { x: 4.6, y: 3.25, w: 8.1, h: 0, line: { color: COLORS.mint, width: 1.25 } });
   text(slide, topics.map((t) => ({ text: t, options: { breakLine: true } })), { x: 4.6, y: 3.45, w: 8.1, h: 2.6, fontSize: 18, color: COLORS.text, paraSpaceAfter: 6 });
-  slide.addNotes(NOTES[pres.slides.length]);
+  addNotes(pres, slide);
   return slide;
 }
 
@@ -156,6 +165,6 @@ function table(slide, rows, { x, y, w, colW, fontSize = 11, rowH = 0.36 }) {
 
 module.exports = {
   W, H, MARGIN,
-  bullet, bulletRuns, text, contentSlide, sectionSlide, footer,
+  setNotes, addNotes, bullet, bulletRuns, text, contentSlide, sectionSlide, footer,
   box, arrow, pill, card, bullets, screenshot, table,
 };

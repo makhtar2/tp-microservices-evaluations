@@ -8,9 +8,9 @@ Développement d'Applications Réparties.
   (34 slides, format 16:9, s'ouvre dans PowerPoint ou Google Slides)
 - **Durée** : environ 27 minutes, dont 10 de démonstration, puis questions
 - **Encadrement** : Madame Ngom
-- **Notes de l'orateur** : chaque slide contient, dans la zone de notes
-  PowerPoint, le texte à dire, identique aux fiches des présentateurs. Ce README reprend ces notes et les
-  complète.
+- **Notes de l'orateur** : gardées hors du dépôt, dans le fichier local
+  `lib/notes.json`. S'il est présent, `npm run build` génère aussi
+  `Soutenance-Plateforme-Evaluations-avec-notes.pptx`.
 
 Un seul support pour toute l'équipe : chaque membre présente la partie qu'il a
 réalisée. Son nom figure en bas de chaque slide.
