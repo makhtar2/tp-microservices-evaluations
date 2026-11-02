@@ -5,21 +5,21 @@ const { COLORS, FONTS, SPEAKERS } = require("../lib/theme");
 const { W, MARGIN, text, contentSlide, sectionSlide, box, arrow, pill, card, screenshot, table } = require("../lib/kit");
 
 const SPEAKER = "bara";
-const PART = "Partie 5 · Saga, fiabilité & tests";
+const PART = "Saga, fiabilité et tests";
 const ACCENT = SPEAKERS[SPEAKER].color;
 
 // Étape de Saga : service + action, reliée à la suivante par un événement.
 function sagaStep(pres, slide, { x, y, w, service, action, color = COLORS.group2 }) {
-  box(pres, slide, { x, y, w, h: 1.05, label: service, sub: action, stripe: color, fontSize: 12.5 });
+  box(pres, slide, { x, y, w, h: 1.05, label: service, sub: action, fontSize: 12.5 });
 }
 
 function sagaSlide(pres) {
   const slide = contentSlide(pres, {
     part: PART,
-    title: "La Saga chorégraphiée : Soumission → Correction → Notification",
+    title: "La Saga chorégraphiée",
     speaker: SPEAKER,
     notes:
-      "Une soumission traverse trois services sans transaction distribuée. Pas de chef d'orchestre : chaque service " +
+      "Une soumission traverse trois services sans transaction distribuée. Il n'y a pas de coordinateur : chaque service " +
       "réagit à un événement et en publie un autre. C'est une Saga chorégraphiée. Chaque étape est locale et " +
       "idempotente : un événement rejoué ne crée pas de doublon. La cohérence est atteinte à terme.",
   });
@@ -40,8 +40,8 @@ function sagaSlide(pres) {
   arrow(pres, slide, xs[3] + 1.5, y + 1.05, xs[3] + 1.5, y2 - 0.05, { color: COLORS.rabbit, width: 2.25 });
   pill(pres, slide, { x: xs[3] + 1.62, y: y + 1.25, label: "grading.completed", color: COLORS.rabbit, code: true, fontSize: 9, w: 1.5 });
   pill(pres, slide, { x: xs[3] + 1.62, y: y + 1.58, label: "result.published", color: COLORS.rabbit, code: true, fontSize: 9, w: 1.5 });
-  slide.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: MARGIN, y: y2, w: W - 2 * MARGIN, h: 0.5, rectRadius: 0.1, fill: { color: COLORS.rabbit }, line: { color: COLORS.rabbit, width: 0 } });
-  text(slide, "RabbitMQ · evaluations.events", { x: MARGIN, y: y2, w: W - 2 * MARGIN, h: 0.5, fontSize: 12, bold: true, color: COLORS.white, align: "center", valign: "middle" });
+  slide.addShape(pres.shapes.RECTANGLE, { x: MARGIN, y: y2, w: W - 2 * MARGIN, h: 0.5, fill: { color: COLORS.rabbit }, line: { color: COLORS.rabbit, width: 0 } });
+  text(slide, "RabbitMQ, exchange evaluations.events", { x: MARGIN, y: y2, w: W - 2 * MARGIN, h: 0.5, fontSize: 12, bold: true, color: COLORS.white, align: "center", valign: "middle" });
   const consommateurs = [
     ["assessment", "Read Model : note et statistiques"],
     ["submission", "copie marquée « résultat publié »"],
@@ -51,13 +51,13 @@ function sagaSlide(pres) {
   consommateurs.forEach(([service, action], i) => {
     const x = MARGIN + i * (cw + 0.25);
     arrow(pres, slide, x + cw / 2, y2 + 0.5, x + cw / 2, 4.65, { color: COLORS.rabbit, width: 1.75 });
-    box(pres, slide, { x, y: 4.65, w: cw, h: 0.85, label: service, sub: action, stripe: i === 0 ? COLORS.group1 : COLORS.group2, fontSize: 12 });
+    box(pres, slide, { x, y: 4.65, w: cw, h: 0.85, label: service, sub: action, fontSize: 12 });
   });
   const principes = [["Sans coordinateur", "chaque service réagit seul"], ["Transactions locales", "une base, une transaction"], ["Idempotence", "un événement rejoué est ignoré"]];
   principes.forEach(([titre, corps], i) => {
     const x = MARGIN + i * (cw + 0.25);
     text(slide, [
-      { text: `${titre} · `, options: { bold: true, color: ACCENT } },
+      { text: `${titre} : `, options: { bold: true, color: ACCENT } },
       { text: corps, options: { color: COLORS.text } },
     ], { x, y: 5.8, w: cw, h: 0.6, fontSize: 11.5, align: "center", valign: "middle" });
   });
@@ -66,7 +66,7 @@ function sagaSlide(pres) {
 function compensationSlide(pres) {
   const slide = contentSlide(pres, {
     part: PART,
-    title: "Compensation : la Saga gère aussi les échecs",
+    title: "Gestion des échecs",
     speaker: SPEAKER,
     notes:
       "Premier scénario : question-service tombe pendant une correction. La copie n'est pas perdue : elle reste " +
@@ -88,7 +88,7 @@ function compensationSlide(pres) {
   const gap = (W - 2 * MARGIN - 5 * sw) / 4;
   steps.forEach(([label, sub, fill, line], i) => {
     const x = MARGIN + i * (sw + gap);
-    box(pres, slide, { x, y, w: sw, h: 0.95, label, sub, fill, line, shadowed: false, fontSize: 11.5 });
+    box(pres, slide, { x, y, w: sw, h: 0.95, label, sub, fill, line, fontSize: 11.5 });
     if (i < 4) arrow(pres, slide, x + sw, y + 0.47, x + sw + gap, y + 0.47, { color: i === 1 ? COLORS.rabbit : COLORS.ink, width: 1.75 });
   });
   // Étiquette centrée sous la flèche ECHEC_CORRECTION → submission.
@@ -98,7 +98,7 @@ function compensationSlide(pres) {
 
   const cw = (W - 2 * MARGIN - 0.25) / 2;
   card(pres, slide, {
-    x: MARGIN, y: 3.85, w: cw, h: 2.45, title: "Soumission hors délai", accent: COLORS.danger, fontSize: 11.5,
+    x: MARGIN, y: 3.85, w: cw, h: 2.45, title: "Soumission hors délai", accent: COLORS.danger, fontSize: 13.5,
     body: [
       ["Statut", "REFUSEE_HORS_DELAI, la copie n'est plus modifiable"],
       ["Pas de correction", "submission.completed n'est pas publié"],
@@ -107,10 +107,10 @@ function compensationSlide(pres) {
     ],
   });
   card(pres, slide, {
-    x: MARGIN + cw + 0.25, y: 3.85, w: cw, h: 2.45, title: "Files de dead-letters", accent: COLORS.rabbit, fontSize: 11.5,
+    x: MARGIN + cw + 0.25, y: 3.85, w: cw, h: 2.45, title: "Files de dead-letters", accent: COLORS.rabbit, fontSize: 13.5,
     body: [
-      ["Avant", "un message en erreur était rejeté puis perdu"],
-      ["Maintenant", "copié dans <queue>.dead-letters puis acquitté"],
+      ["Traitement", "un message en erreur n'est pas perdu"],
+      ["Copie", "dans <queue>.dead-letters puis acquitté"],
       ["Traçabilité", "en-têtes x-routing-key, x-error, x-failed-at"],
       ["Reprise", "inspecté et rejoué depuis l'interface RabbitMQ"],
     ],
@@ -120,7 +120,7 @@ function compensationSlide(pres) {
 function securitySlide(pres) {
   const slide = contentSlide(pres, {
     part: PART,
-    title: "Sécurité renforcée et resoumission autorisée",
+    title: "Sécurité et resoumission",
     speaker: SPEAKER,
     notes:
       "Plusieurs failles ont été corrigées : un étudiant ne lit que sa propre copie, les bonnes réponses ne sont " +
@@ -129,7 +129,7 @@ function securitySlide(pres) {
       "resoumission, avec une date limite propre à la copie. grading-service abandonne alors la correction non validée.",
   });
   card(pres, slide, {
-    x: MARGIN, y: 1.6, w: 5.6, h: 4.95, title: "Durcissement de la sécurité", accent: ACCENT, fontSize: 12,
+    x: MARGIN, y: 1.6, w: 5.6, h: 4.95, title: "Contrôles de sécurité", accent: ACCENT, fontSize: 14.5,
     body: [
       ["Copies", "un étudiant n'accède qu'à sa propre copie"],
       ["Questions", "les bonnes réponses ne sont jamais exposées aux étudiants"],
@@ -149,45 +149,41 @@ function securitySlide(pres) {
   ];
   flux.forEach(([label, sub], i) => {
     const x = rx + i * (rw / 3);
-    box(pres, slide, { x, y: 2.05, w: rw / 3 - 0.3, h: 0.95, label, sub, stripe: i === 0 ? COLORS.group1 : COLORS.group2, fontSize: 10.5 });
+    box(pres, slide, { x, y: 2.05, w: rw / 3 - 0.3, h: 0.95, label, sub, fontSize: 10.5 });
     if (i < 2) arrow(pres, slide, x + rw / 3 - 0.3, 2.52, x + rw / 3, 2.52, { color: i === 1 ? COLORS.rabbit : COLORS.ink, width: 1.75 });
   });
   pill(pres, slide, { x: rx + rw / 3 + 0.05, y: 3.12, label: "submission.reopened", color: COLORS.rabbit, code: true, fontSize: 9, w: 1.85 });
   text(slide, "Refusée si le résultat est déjà publié.", { x: rx + rw / 3 + 2.0, y: 3.1, w: 2.6, h: 0.32, fontSize: 9.5, italic: true, color: COLORS.muted });
   const sw = 3.9;
-  screenshot(pres, slide, { file: "08-correction-copie.png", x: rx + (rw - sw) / 2, y: 3.6, w: sw, caption: "Page de correction : bouton « Autoriser une resoumission »" });
+  screenshot(pres, slide, { file: "08-correction-copie.png", x: rx + (rw - sw) / 2, y: 3.6, w: sw, caption: "Bouton Autoriser une resoumission, page de correction" });
 }
 
 function frontendSlide(pres) {
   const slide = contentSlide(pres, {
     part: PART,
-    title: "Frontend React : une seule porte d'entrée, l'API Gateway",
+    title: "Le frontend React",
     speaker: SPEAKER,
     notes:
       "Le frontend est une application React construite avec Vite et Tailwind CSS. Le socle (structure, design, " +
       "pages Questions et Évaluations) a été posé par Makhtar Wade au premier sprint, puis complété avec la connexion " +
-      "réelle, les vues étudiant, correction et administration. Point clé pour l'architecture : le navigateur ne parle " +
+      "réelle, les vues étudiant, correction et administration. Le navigateur ne parle " +
       "qu'à l'API Gateway, jamais directement aux microservices.",
   });
   screenshot(pres, slide, { file: "03-selecteur-de-questions.png", x: MARGIN, y: 1.6, w: 5.95, caption: "Création d'une évaluation avec le sélecteur de questions" });
   screenshot(pres, slide, { file: "02-banque-de-questions.png", x: MARGIN + 6.2, y: 1.6, w: 5.95, caption: "Banque de questions" });
-  const techs = ["React 19", "Vite", "Tailwind CSS v4", "Routes protégées par rôle", "Tous les appels via /api → api-gateway"];
-  let x = MARGIN;
-  techs.forEach((t) => {
-    x += pill(pres, slide, { x, y: 6.45, label: t, color: ACCENT }) + 0.15;
-  });
+  text(slide, "React 19, Vite et Tailwind CSS v4. Les routes sont protégées par rôle et tous les appels passent par /api vers l'api-gateway.", { x: MARGIN, y: 6.42, w: W - 2 * MARGIN, h: 0.45, fontSize: 12.5, align: "center" });
 }
 
 function testsSlide(pres) {
   const slide = contentSlide(pres, {
     part: PART,
-    title: "274 tests automatisés, du service au parcours complet",
+    title: "Les tests",
     speaker: SPEAKER,
     notes:
       "234 tests unitaires couvrent les sept services, avec node:test et sans dépendance. 40 tests de bout en bout " +
       "démarrent une infrastructure jetable (MongoDB et RabbitMQ sur d'autres ports), lancent les sept services et " +
       "passent par la gateway avec de vrais JWT, y compris en arrêtant question-service pour tester la compensation. " +
-      "Enfin, un test pilote l'interface React dans Chrome : c'est lui qui a produit les captures de cette présentation.",
+      "Un dernier test parcourt l'interface React dans Chrome.",
   });
   const data = [{
     name: "Tests unitaires",
@@ -214,7 +210,7 @@ function testsSlide(pres) {
     [{ text: "resoumission", code: true }, "3", "réouverture par l'enseignant responsable"],
   ], { x: rx, y: 1.95, w: rw, colW: [2.15, 0.65, 3.18], fontSize: 10, rowH: 0.5 });
   card(pres, slide, {
-    x: rx, y: 5.15, w: rw, h: 1.4, title: "Infrastructure jetable", accent: ACCENT, fontSize: 10.5, titleSize: 12,
+    x: rx, y: 5.15, w: rw, h: 1.4, title: "Environnement de test", accent: ACCENT, fontSize: 12.5, titleSize: 13,
     body: "MongoDB et RabbitMQ dédiés (ports 27018 et 5673), 7 services lancés, vrais JWT via la gateway, puis tout est supprimé.",
   });
 }
@@ -222,8 +218,7 @@ function testsSlide(pres) {
 module.exports = (pres) => {
   sectionSlide(pres, {
     number: 5,
-    title: "Saga, fiabilité & tests",
-    subtitle: "Rester cohérent quand un service tombe, et le prouver",
+    title: "Saga, fiabilité et tests",
     speaker: SPEAKER,
     topics: ["La Saga chorégraphiée", "Compensation et dead-letters", "Sécurité et resoumission", "Frontend React", "Tests unitaires et bout-en-bout"],
   });

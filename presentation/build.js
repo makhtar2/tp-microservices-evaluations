@@ -3,7 +3,6 @@
 const path = require("node:path");
 const PptxGenJS = require("pptxgenjs");
 const { PROJECT } = require("./lib/theme");
-const { finalize } = require("./lib/kit");
 
 const SECTIONS = [
   "00-ouverture",
@@ -26,6 +25,7 @@ const OUTPUT = path.resolve(process.argv[2] || path.join(__dirname, "Soutenance-
   pres.title = PROJECT.titre;
   pres.subject = PROJECT.classe;
   pres.company = PROJECT.universite;
+  pres.author = "Équipe du projet Evalio";
 
   // Plage de slides de chaque section, reprise dans presentation/README.md.
   for (const section of SECTIONS) {
@@ -33,7 +33,6 @@ const OUTPUT = path.resolve(process.argv[2] || path.join(__dirname, "Soutenance-
     require(`./slides/${section}`)(pres);
     console.log(`${section.padEnd(16)} slides ${first}-${pres.slides.length}`);
   }
-  finalize();
 
   await pres.writeFile({ fileName: OUTPUT });
   console.log(`Support généré : ${OUTPUT}`);

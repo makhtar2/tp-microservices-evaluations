@@ -7,14 +7,19 @@ Développement d'Applications Réparties.
 - **Fichier à projeter** : [`Soutenance-Plateforme-Evaluations.pptx`](Soutenance-Plateforme-Evaluations.pptx)
   (34 slides, format 16:9, s'ouvre dans PowerPoint ou Google Slides)
 - **Durée** : environ 27 minutes, démonstration comprise, puis questions
-- **Encadrement** : Fatou Ngom
+- **Encadrement** : Madame Ngom
 - **Notes de l'orateur** : chaque slide contient, dans la zone de notes
   PowerPoint, ce qu'il faut dire. Ce README reprend ces notes et les
   complète.
 
-Un seul support pour toute l'équipe : **chaque membre présente la partie
-qu'il a réalisée**. Sur chaque slide, le bandeau « Présenté par … » en haut
-à droite (de la couleur du présentateur) indique qui parle.
+Un seul support pour toute l'équipe : chaque membre présente la partie qu'il a
+réalisée. Son nom figure en bas de chaque slide.
+
+Logo : déposer le fichier `assets/logo-ucak.png` (carré) puis relancer
+`npm run build` pour l'afficher sur la page de garde.
+
+L'ancien modèle du support est conservé dans
+[`ancien-modele/`](ancien-modele/Soutenance-Plateforme-Evaluations-ancien-modele.pptx).
 
 ## Sommaire
 
@@ -56,9 +61,9 @@ Mouhamed Mbacke 5 min, Mame Bara Samb 5 min, Pape Makhtar Aidara 5 min.
 | El Hadji Fallou Bousso | Groupe 2 | user-service (JWT, rôles), api-gateway, submission-service, grading-service, notification-service, mise en place de RabbitMQ |
 | Mame Bara Samb | Groupe 2 | compensation de la Saga et dead-letters, resoumission, planification, durcissement sécurité, frontend complet, 234 tests unitaires et 40 tests bout-en-bout |
 | Pape Makhtar Aidara | Groupe 2 | docker-compose (15 conteneurs), Dockerfiles, `.dockerignore`, documentation des services et README racine, suite de validation docs et Docker |
-> Pour changer la répartition : modifier `lib/plan.js` (sommaire et slide
-> équipe) et la constante `SPEAKER` en tête du fichier de la partie dans
-> `slides/` (bandeau « Présenté par » et couleur), puis `npm run build`.
+> Pour changer la répartition : modifier `lib/plan.js` (plan et slide
+> répartition) et la constante `SPEAKER` en tête du fichier de la partie dans
+> `slides/` (nom en pied de page), puis `npm run build`.
 
 ## Contenu slide par slide
 
@@ -177,7 +182,7 @@ Questions probables :
 |---|---|---|
 | 28 | Ouverture de la partie | — |
 | 29 | Les 15 conteneurs par couche, réseau `evaluations-net`, 8 volumes, 7 healthchecks, commandes de démarrage | Toute la plateforme démarre avec docker compose, dans le bon ordre |
-| 30 | README racine et par service, contrats OpenAPI et gRPC, documents de conception ; sortie réelle de la suite de validation (110/110) | La documentation est vérifiée automatiquement |
+| 30 | README racine et par service, contrats OpenAPI et gRPC, documents de conception ; suite de validation (110 vérifications) | La documentation est vérifiée automatiquement |
 | 31 | Quatre captures du parcours et les quatre étapes de la démo live | Les captures viennent du test d'interface ; la démo rejoue le même parcours |
 
 Questions probables :
@@ -194,7 +199,7 @@ Questions probables :
 |---|---|---|
 | 32 | Les six principes des systèmes distribués appliqués dans le projet (Mouhamed Mbacke) | Synthèse : chaque principe renvoie à une partie |
 | 33 | (Pape Makhtar Aidara) Bilan chiffré (6 services, 6 bases, 3 protocoles, 8 événements, 274 tests, 15 conteneurs), enseignements, perspectives | Pour la production : Kubernetes, observabilité, pattern Outbox, circuit breaker, CI |
-| 34 | Merci, questions, membres, encadrement, lien du dépôt | Chacun répond sur sa partie |
+| 34 | Merci pour votre aimable attention | Chacun répond sur sa partie |
 
 ## Démonstration en direct
 
@@ -226,8 +231,8 @@ scénarios d'échec dans la console.
 - Fermer les autres projets Docker pour libérer de la mémoire.
 - Projeter en mode Présentateur : les notes de chaque slide s'affichent
   pour l'orateur.
-- Passer la parole en annonçant le présentateur suivant ; son nom est sur
-  le bandeau de la slide d'ouverture de sa partie.
+- Passer la parole en annonçant le présentateur suivant ; son nom est en
+  bas de la slide d'ouverture de sa partie.
 - Répéter une fois en chronométrant : environ 27 minutes au total.
 
 ## Régénérer le support
@@ -249,9 +254,9 @@ PowerPoint verrouille le fichier tant qu'il est ouvert : le fermer avant
 | Fichier | Rôle |
 |---|---|
 | `build.js` | assemble les parties dans l'ordre et écrit le `.pptx` |
-| `lib/theme.js` | couleurs (alignées sur l'interface Evalio), polices, présentateurs |
+| `lib/theme.js` | couleurs, polices (Cambria, Calibri, Courier New), présentateurs |
 | `lib/plan.js` | déroulé : parties, présentateurs, durées, réalisations |
-| `lib/kit.js` | composants : gabarits de slides, boîtes, flèches, cartes, captures, tableaux |
+| `lib/kit.js` | composants : gabarits de slides, boîtes, flèches, encadrés, captures, tableaux |
 | `slides/00-ouverture.js` … `slides/07-conclusion.js` | une partie par fichier |
 | `assets/captures/` | captures d'écran utilisées dans les slides |
 
