@@ -14,12 +14,9 @@ Le suivi des tâches se fait sur le board Trello
 | Mouhamed Mbacke | [@mbacke935](https://github.com/mbacke935) | Groupe 1 |
 | El Hadji Fallou Bousso | [@serignefalloubousso99-dot](https://github.com/serignefalloubousso99-dot) | Groupe 2 |
 | Mame Bara Samb | [@bara-samb](https://github.com/bara-samb) | Groupe 2 |
-| Pape Makhtar Aidara | *à confirmer / inviter sur le repo* | Groupe 2 |
-| Fatou Ngom | *à confirmer / inviter sur le repo* | non assignée pour l'instant |
+| Pape Makhtar Aidara | — | Groupe 2 |
 
-> Toute personne listée ci-dessus sans compte GitHub confirmé doit être
-> invitée comme collaboratrice/collaborateur sur le repo
-> (`makhtar2/tp-microservices-evaluations`) et ajoutée au board Trello.
+Encadrement : Madame Ngom.
 
 ## Répartition du travail
 

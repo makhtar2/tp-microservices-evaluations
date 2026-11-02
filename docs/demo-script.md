@@ -1,11 +1,8 @@
-# Script de démo — soutenance
+# Script de démonstration
 
-Version complète d'environ 15 minutes, jouée sur la stack Docker. Pendant la
-soutenance, la démonstration dure environ 10 minutes : parcours nominal, puis
-panne si le temps le permet. Chaque étape
-indique ce qu'on montre à l'écran et ce qu'il faut dire.
+Déroulé complet de la démonstration, joué sur la stack Docker.
 
-## Préparation (avant la soutenance)
+## Préparation
 
 ```bash
 docker compose up -d --wait rabbitmq user-db question-db assessment-db submission-db grading-db notification-db
@@ -49,7 +46,7 @@ Montrer le diagramme de `docs/architecture.md` :
 1. **Enseignant** : se connecter, créer une évaluation en choisissant
    des questions dans la banque (QCM, Vrai/Faux, question courte, une
    question ouverte), puis la publier (ou planifier la publication).
-   → Dire : `AssessmentPublished` est publié ; `submission-service`
+   → `AssessmentPublished` est publié ; `submission-service`
    met à jour sa liste locale des évaluations ouvertes, sans appel
    synchrone, et `notification-service` prévient les étudiants.
 2. **Étudiant** : se connecter, ouvrir l'évaluation, répondre (les
@@ -73,13 +70,12 @@ Montrer le diagramme de `docs/architecture.md` :
 2. **Étudiant** : soumettre une copie sur une évaluation publiée.
 3. Logs : `grading-service` garde la copie `EN_ATTENTE` et la relance
    toutes les 30 s (`tentative n/5`).
-   → Dire : la soumission n'est pas perdue et l'étudiant n'est pas
+   → la soumission n'est pas perdue et l'étudiant n'est pas
    bloqué, c'est la Saga qui absorbe la panne.
 4. Après 5 échecs (≈ 2 min 30), la copie passe en `ECHEC_CORRECTION` et
    `grading.failed` est publié : `submission-service` signale l'incident
    sur la copie (`incidentCorrection`) et `notification-service` prévient
    l'étudiant et l'enseignant. C'est la transaction de compensation.
-   Pour gagner du temps, enchaîner sur la suite pendant l'attente.
 5. Redémarrer le service : `docker compose start question-service`.
 6. **Enseignant** : dans la page de correction, relancer la correction
    (`POST /gradings/:id/retry`). Elle aboutit et `grading.completed`
@@ -113,9 +109,3 @@ dont le résultat est déjà publié ne peut plus être rouverte.
 Montrer `e2e/scenarios/` : parcours complet, échec de correction, hors
 délai, resoumission, sécurité et planification. Ils se lancent avec
 `cd e2e && npm test` (voir `e2e/README.md`).
-
-## Plan B
-
-Si l'interface ou Docker pose problème le jour J, la suite e2e rejoue
-les mêmes scénarios via la gateway et montre les mêmes transitions
-d'état dans la console.
