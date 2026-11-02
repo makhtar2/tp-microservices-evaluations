@@ -1,6 +1,8 @@
 # Script de démo — soutenance
 
-Déroulé d'environ 15 minutes, joué sur la stack Docker. Chaque étape
+Version complète d'environ 15 minutes, jouée sur la stack Docker. Pendant la
+soutenance, la démonstration dure environ 10 minutes : parcours nominal, puis
+panne si le temps le permet. Chaque étape
 indique ce qu'on montre à l'écran et ce qu'il faut dire.
 
 ## Préparation (avant la soutenance)

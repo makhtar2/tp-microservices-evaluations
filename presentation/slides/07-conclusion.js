@@ -1,4 +1,5 @@
 // Conclusion : principes appliqués, bilan et perspectives, remerciements.
+const NOTES = require("../lib/notes.json");
 const { COLORS, FONTS } = require("../lib/theme");
 const { CONCLUSION } = require("../lib/plan");
 const { W, H, MARGIN, text, contentSlide, card, table } = require("../lib/kit");
@@ -11,9 +12,6 @@ function principlesSlide(pres) {
     part: PART,
     title: "Principes des systèmes distribués appliqués",
     speaker: PRINCIPES.speaker,
-    notes:
-      "Reprendre les six principes vus pendant la présentation : base par service, couplage faible et choix sync/async " +
-      "(partie 3), tolérance aux pannes (partie 5), sécurité (parties 3 et 5), déploiement indépendant (partie 6).",
   });
   table(slide, [
     ["Principe", "Dans le projet"],
@@ -31,9 +29,6 @@ function bilanSlide(pres) {
     part: PART,
     title: "Bilan et perspectives",
     speaker: BILAN.speaker,
-    notes:
-      "Résumer le projet, puis ce qu'il faudrait ajouter pour une mise en production : Kubernetes, observabilité, " +
-      "pattern Outbox, disjoncteur sur l'appel gRPC et intégration continue.",
   });
   const cw = (W - 2 * MARGIN - 0.3) / 2;
   card(pres, slide, {
@@ -63,7 +58,7 @@ function thanksSlide(pres) {
   const slide = pres.addSlide();
   slide.background = { color: COLORS.deep };
   text(slide, "Merci pour votre aimable attention", { x: 1, y: H / 2 - 0.6, w: W - 2, h: 1.2, fontSize: 36, fontFace: FONTS.title, color: COLORS.white, align: "center", valign: "middle" });
-  slide.addNotes("Remercier le jury. Chacun répond aux questions sur sa partie.");
+  slide.addNotes(NOTES[pres.slides.length]);
 }
 
 module.exports = (pres) => {

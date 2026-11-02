@@ -12,10 +12,6 @@ function problemSlide(pres) {
     part: PART,
     title: "Objectifs et cycle de vie",
     speaker: SPEAKER,
-    notes:
-      "Un établissement veut une plateforme centralisée, modulaire et évolutive. Les enseignants constituent une banque " +
-      "de questions, créent et publient des évaluations, puis corrigent. Les étudiants passent les évaluations et " +
-      "consultent leurs résultats. La frise montre les 8 étapes du cycle de vie, de la question au résultat.",
   });
   const objectifs = [
     ["Centralisée", "Une seule plateforme pour enseignants, étudiants et administrateurs, accessible par le web."],
@@ -48,9 +44,6 @@ function actorsSlide(pres) {
     part: PART,
     title: "Acteurs et fonctionnalités",
     speaker: SPEAKER,
-    notes:
-      "Trois rôles, chacun avec son propre espace dans l'interface. Les dix fonctionnalités F1 à F10 du cahier de " +
-      "conception sont chacune portées par un service : ce découpage donne l'architecture microservices.",
   });
   const acteurs = [
     ["Enseignant", ["Banque de questions", "Créer, planifier, publier", "Corriger (auto + manuel)", "Autoriser une resoumission", "Consulter les résultats"]],
@@ -87,8 +80,6 @@ function rulesSlide(pres) {
     part: PART,
     title: "Règles métier",
     speaker: SPEAKER,
-    notes:
-      "Ces règles viennent du cahier de conception. La dernière colonne indique le service qui fait respecter la règle.",
   });
   const regles = [
     ["Accès limité à la période planifiée", "Une évaluation n'est accessible qu'entre sa date de début et sa date de fin.", "submission"],

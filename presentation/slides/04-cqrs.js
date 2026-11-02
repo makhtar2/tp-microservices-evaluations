@@ -13,12 +13,6 @@ function cqrsSlide(pres) {
     part: PART,
     title: "CQRS",
     speaker: SPEAKER,
-    notes:
-      "Dans assessment-service, les commandes et les requêtes ne passent pas par le même modèle. Une commande valide " +
-      "les règles métier, par exemple : on ne publie pas une évaluation sans question ni barème. Si elle est acceptée, " +
-      "elle n'écrit pas l'état : elle ajoute un événement dans l'Event Store. Le Read Model est mis à jour à partir de " +
-      "cet événement, et toutes les lectures se font sur lui. Les événements venant de grading-service suivent le même " +
-      "chemin.",
   });
   const y = 2.05;
   const h = 1.15;
@@ -61,11 +55,6 @@ function eventSourcingSlide(pres) {
     part: PART,
     title: "Event Sourcing",
     speaker: SPEAKER,
-    notes:
-      "L'Event Store est un journal en ajout seul : une ligne par fait métier. L'état d'une évaluation n'est jamais " +
-      "stocké comme vérité : il est calculé en appliquant les événements dans l'ordre, avec une fonction pure applyEvent. " +
-      "La route POST /assessments/:id/rebuild peut effacer et reconstruire le Read Model à tout moment, " +
-      "par exemple après un incident. Ce cas est couvert par un test de bout en bout.",
   });
   const events = [
     ["AssessmentCreated", "BROUILLON"],
@@ -119,11 +108,6 @@ function readModelSlide(pres) {
     part: PART,
     title: "Le Read Model",
     speaker: SPEAKER,
-    notes:
-      "À gauche, la liste des évaluations de l'enseignant : le statut « Publiée » vient du Read Model, mis à jour par " +
-      "l'événement AssessmentPublished. À droite, les résultats de l'étudiant : la note et la moyenne de la classe ne " +
-      "s'affichent qu'après ResultPublished, conformément à la règle métier 6. La requête /results calcule aussi la " +
-      "répartition des notes par tranches.",
   });
   screenshot(pres, slide, { file: "04-evaluation-publiee.png", x: MARGIN, y: 1.6, w: 5.95, caption: "Statut Publiée, lu dans le Read Model" });
   screenshot(pres, slide, { file: "10-mes-resultats.png", x: MARGIN + 6.2, y: 1.6, w: 5.95, caption: "Note et moyenne, après ResultPublished" });

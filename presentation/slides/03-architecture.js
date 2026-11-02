@@ -14,11 +14,6 @@ function overviewSlide(pres) {
     part: PART,
     title: "Vue d'ensemble de l'architecture",
     speaker: SPEAKER,
-    notes:
-      "Le navigateur ne connaît qu'une adresse : l'API Gateway. Elle vérifie le JWT et route vers le bon service. " +
-      "Chaque service a sa propre base MongoDB : personne ne lit la base d'un autre. Les services se parlent de deux " +
-      "façons : un seul appel synchrone (gRPC, assessment vers question) et des événements asynchrones sur RabbitMQ " +
-      "pour tout le reste. notification-service n'a même pas d'API : il ne fait qu'écouter le bus.",
   });
   const sw = 1.8;
   const gap = (W - 2 * MARGIN - 6 * sw) / 5;
@@ -75,10 +70,6 @@ function communicationSlide(pres) {
     part: PART,
     title: "REST, gRPC, AMQP",
     speaker: SPEAKER,
-    notes:
-      "REST pour le frontend, parce que c'est universel et lisible. gRPC pour le seul appel inter-services synchrone, " +
-      "parce que le contrat est typé et compact. AMQP pour tout le reste : l'asynchrone absorbe les pannes et les pics, " +
-      "et permet d'ajouter un consommateur sans modifier le producteur.",
   });
   table(slide, [
     ["Protocole", "Technologie", "Utilisé pour", "Raison"],
@@ -114,11 +105,6 @@ function gatewaySlide(pres) {
     part: PART,
     title: "Authentification et JWT",
     speaker: SPEAKER,
-    notes:
-      "Le login passe par user-service, qui signe un JWT contenant l'identifiant et le rôle. Ensuite, chaque requête " +
-      "porte ce jeton. La gateway le vérifie une seule fois, applique un contrôle par rôle sur la route, supprime les " +
-      "en-têtes d'identité envoyés par le client (anti-usurpation) et transmet X-User-Id et X-User-Role. Le service " +
-      "en aval n'a plus qu'à appliquer ses règles fines, par exemple : un étudiant ne lit que sa propre copie.",
   });
   const lanes = [
     ["Navigateur", 1.55, COLORS.deep],
@@ -163,10 +149,6 @@ function eventsSlide(pres) {
     part: PART,
     title: "Le bus RabbitMQ",
     speaker: SPEAKER,
-    notes:
-      "Un seul exchange de type topic. Chaque service consommateur déclare sa propre queue durable et s'abonne aux " +
-      "clés de routage qui l'intéressent. Le tableau est relevé sur RabbitMQ en fonctionnement : 8 événements, 4 queues, " +
-      "16 liaisons. Chaque queue a sa file de dead-letters : un message en échec n'est jamais perdu.",
   });
   const events = [
     ["assessment.published", "assessment", "submission, notification"],
@@ -184,7 +166,7 @@ function eventsSlide(pres) {
   ], { x: MARGIN, y: 1.6, w: 7.3, colW: [2.75, 1.45, 3.1], fontSize: 11, rowH: 0.47 });
 
   const h = screenshot(pres, slide, { file: "rabbitmq-queues-noms.png", x: 8.2, y: 1.6, w: 4.53, ratio: 1391 / 562, caption: "Queues relevées sur RabbitMQ, avec leurs dead-letters" });
-  text(slide, "1 exchange topic durable, 4 queues et 4 files de dead-letters, 16 liaisons entre clés et queues.", { x: 8.2, y: 1.6 + h + 0.55, w: 4.53, h: 0.9, fontSize: 14 });
+  text(slide, "1 exchange topic durable, 4 queues et leurs 4 queues de dead-letters, 16 liaisons entre clés et queues.", { x: 8.2, y: 1.6 + h + 0.55, w: 4.53, h: 0.9, fontSize: 14 });
 }
 
 function lifecycleSlide(pres) {
@@ -192,11 +174,6 @@ function lifecycleSlide(pres) {
     part: PART,
     title: "Soumission et correction",
     speaker: SPEAKER,
-    notes:
-      "submission-service et grading-service ne partagent aucune donnée. La copie passe EN_COURS puis SOUMISE, ce qui " +
-      "publie submission.completed. grading-service réagit : il corrige automatiquement les questions fermées, " +
-      "l'enseignant corrige le reste puis valide, ce qui publie grading.completed et result.published. Les étiquettes " +
-      "orange sont des événements : c'est le seul lien entre les deux cycles.",
   });
   const sh = 0.62;
   const state = (x, y, w, label, color, fill, sub) =>

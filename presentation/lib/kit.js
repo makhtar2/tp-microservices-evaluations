@@ -1,6 +1,7 @@
 // Composants des slides. Toutes les mesures sont en pouces (format 16:9,
 // 13,333 × 7,5).
 const path = require("node:path");
+const NOTES = require("./notes.json");
 const { COLORS, FONTS, PROJECT, SPEAKERS } = require("./theme");
 
 const W = 13.333;
@@ -27,7 +28,7 @@ function footer(pres, slide, { speaker, part } = {}) {
   text(slide, `${nom}${pres.slides.length}`, { x: W - MARGIN - 5, y: y + 0.08, w: 5, h: 0.28, fontSize: 10, color: COLORS.muted, align: "right", valign: "middle" });
 }
 
-function contentSlide(pres, { part, title, speaker, notes }) {
+function contentSlide(pres, { part, title, speaker }) {
   const slide = pres.addSlide();
   slide.background = { color: COLORS.white };
   slide.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 0.12, fill: { color: COLORS.deep }, line: { color: COLORS.deep, width: 0 } });
@@ -35,11 +36,11 @@ function contentSlide(pres, { part, title, speaker, notes }) {
   text(slide, title, { x: MARGIN, y: 0.42, w: W - 2 * MARGIN, h: 0.68, fontSize: 28, fontFace: FONTS.title, color: COLORS.deep, valign: "middle" });
   slide.addShape(pres.shapes.LINE, { x: MARGIN, y: 1.15, w: W - 2 * MARGIN, h: 0, line: { color: COLORS.mint, width: 1 } });
   footer(pres, slide, { speaker, part });
-  if (notes) slide.addNotes(notes);
+  slide.addNotes(NOTES[pres.slides.length]);
   return slide;
 }
 
-function sectionSlide(pres, { number, title, speaker, topics = [], notes }) {
+function sectionSlide(pres, { number, title, speaker, topics = [] }) {
   const slide = pres.addSlide();
   slide.background = { color: COLORS.white };
   footer(pres, slide, { speaker });
@@ -50,7 +51,7 @@ function sectionSlide(pres, { number, title, speaker, topics = [], notes }) {
   text(slide, title, { x: 4.6, y: 1.75, w: 8.1, h: 1.35, fontSize: 32, color: COLORS.deep, fontFace: FONTS.title, valign: "bottom" });
   slide.addShape(pres.shapes.LINE, { x: 4.6, y: 3.25, w: 8.1, h: 0, line: { color: COLORS.mint, width: 1.25 } });
   text(slide, topics.map((t) => ({ text: t, options: { breakLine: true } })), { x: 4.6, y: 3.45, w: 8.1, h: 2.6, fontSize: 18, color: COLORS.text, paraSpaceAfter: 6 });
-  if (notes) slide.addNotes(notes);
+  slide.addNotes(NOTES[pres.slides.length]);
   return slide;
 }
 

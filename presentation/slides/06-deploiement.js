@@ -13,11 +13,6 @@ function dockerSlide(pres) {
     part: PART,
     title: "Déploiement avec Docker Compose",
     speaker: SPEAKER,
-    notes:
-      "Chaque service a son Dockerfile, et docker-compose orchestre les 15 conteneurs : RabbitMQ, six bases MongoDB, " +
-      "six microservices, la gateway et le frontend, sur un réseau privé. Les bases et RabbitMQ ont des healthchecks : " +
-      "les services ne démarrent que quand leurs dépendances sont prêtes. Seuls les ports utiles sont exposés. Les " +
-      "données survivent aux redémarrages grâce aux volumes.",
   });
   const fx = MARGIN;
   const fw = 8.15;
@@ -57,11 +52,6 @@ function docsSlide(pres) {
     part: PART,
     title: "Documentation et contrats",
     speaker: SPEAKER,
-    notes:
-      "Chaque service a son README (ports, " +
-      "variables, événements), les API REST sont décrites en OpenAPI, le contrat gRPC est partagé. Une " +
-      "suite de 110 vérifications contrôle les README, les liens entre documents, " +
-      "les Dockerfiles, le docker-compose, ses services et ses volumes.",
   });
   const docs = [
     ["README racine", ["architecture et matrice des ports", "comptes de test, démarrage Docker", "synthèse des API par service"]],
@@ -94,9 +84,6 @@ function demoSlide(pres) {
     part: PART,
     title: "Démonstration",
     speaker: SPEAKER,
-    notes:
-      "Pendant la démo live, suivre les quatre étapes du bas, en gardant ouverts RabbitMQ (onglet Queues) et les logs. " +
-      "Plan B si le réseau ou Docker pose problème : lancer la suite e2e, qui rejoue le même parcours.",
   });
   const captures = [
     ["05-mes-evaluations.png", "Évaluations ouvertes, côté étudiant"],

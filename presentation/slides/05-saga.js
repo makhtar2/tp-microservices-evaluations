@@ -18,10 +18,6 @@ function sagaSlide(pres) {
     part: PART,
     title: "La Saga chorégraphiée",
     speaker: SPEAKER,
-    notes:
-      "Une soumission traverse trois services sans transaction distribuée. Il n'y a pas de coordinateur : chaque service " +
-      "réagit à un événement et en publie un autre. C'est une Saga chorégraphiée. Chaque étape est locale et " +
-      "idempotente : un événement rejoué ne crée pas de doublon. La cohérence est atteinte à terme.",
   });
   const y = 1.9;
   const w = 2.2;
@@ -68,12 +64,6 @@ function compensationSlide(pres) {
     part: PART,
     title: "Gestion des échecs",
     speaker: SPEAKER,
-    notes:
-      "Premier scénario : question-service tombe pendant une correction. La copie n'est pas perdue : elle reste " +
-      "EN_ATTENTE et grading-service la relance toutes les 30 secondes. Après 5 échecs, elle passe en ECHEC_CORRECTION " +
-      "et grading.failed déclenche la compensation : submission-service signale l'incident sur la copie, l'étudiant et " +
-      "l'enseignant sont prévenus, et l'enseignant peut relancer. Deuxième scénario : hors délai, aucune correction " +
-      "n'est lancée. Enfin, un message qui échoue n'est jamais perdu : il part dans une file de dead-letters.",
   });
   text(slide, "Correction automatique impossible (service distant en panne)", { x: MARGIN, y: 1.55, w: 9, h: 0.32, fontSize: 12.5, bold: true, color: COLORS.danger });
   const y = 2.0;
@@ -107,7 +97,7 @@ function compensationSlide(pres) {
     ],
   });
   card(pres, slide, {
-    x: MARGIN + cw + 0.25, y: 3.85, w: cw, h: 2.45, title: "Files de dead-letters", accent: COLORS.rabbit, fontSize: 13.5,
+    x: MARGIN + cw + 0.25, y: 3.85, w: cw, h: 2.45, title: "Queues de dead-letters", accent: COLORS.rabbit, fontSize: 13.5,
     body: [
       ["Traitement", "un message en erreur n'est pas perdu"],
       ["Copie", "dans <queue>.dead-letters puis acquitté"],
@@ -122,11 +112,6 @@ function securitySlide(pres) {
     part: PART,
     title: "Sécurité et resoumission",
     speaker: SPEAKER,
-    notes:
-      "Plusieurs failles ont été corrigées : un étudiant ne lit que sa propre copie, les bonnes réponses ne sont " +
-      "jamais envoyées aux étudiants, les types de fichiers déposés sont filtrés, et assessment-service applique " +
-      "l'identité transmise par la gateway. À droite, la règle métier 3 : l'enseignant responsable peut autoriser une " +
-      "resoumission, avec une date limite propre à la copie. grading-service abandonne alors la correction non validée.",
   });
   card(pres, slide, {
     x: MARGIN, y: 1.6, w: 5.6, h: 4.95, title: "Contrôles de sécurité", accent: ACCENT, fontSize: 14.5,
@@ -163,11 +148,6 @@ function frontendSlide(pres) {
     part: PART,
     title: "Le frontend React",
     speaker: SPEAKER,
-    notes:
-      "Le frontend est une application React construite avec Vite et Tailwind CSS. Le socle (structure, design, " +
-      "pages Questions et Évaluations) a été posé par Makhtar Wade au premier sprint, puis complété avec la connexion " +
-      "réelle, les vues étudiant, correction et administration. Le navigateur ne parle " +
-      "qu'à l'API Gateway, jamais directement aux microservices.",
   });
   screenshot(pres, slide, { file: "03-selecteur-de-questions.png", x: MARGIN, y: 1.6, w: 5.95, caption: "Création d'une évaluation avec le sélecteur de questions" });
   screenshot(pres, slide, { file: "02-banque-de-questions.png", x: MARGIN + 6.2, y: 1.6, w: 5.95, caption: "Banque de questions" });
@@ -179,11 +159,6 @@ function testsSlide(pres) {
     part: PART,
     title: "Les tests",
     speaker: SPEAKER,
-    notes:
-      "234 tests unitaires couvrent les sept services, avec node:test et sans dépendance. 40 tests de bout en bout " +
-      "démarrent une infrastructure jetable (MongoDB et RabbitMQ sur d'autres ports), lancent les sept services et " +
-      "passent par la gateway avec de vrais JWT, y compris en arrêtant question-service pour tester la compensation. " +
-      "Un dernier test parcourt l'interface React dans Chrome.",
   });
   const data = [{
     name: "Tests unitaires",

@@ -1,6 +1,7 @@
 // Page de garde, plan et répartition du travail.
 const fs = require("node:fs");
 const path = require("node:path");
+const NOTES = require("../lib/notes.json");
 const { COLORS, FONTS, PROJECT, SPEAKERS } = require("../lib/theme");
 const { OUVERTURE, PARTS, REALISATIONS } = require("../lib/plan");
 const { W, text, contentSlide, table } = require("../lib/kit");
@@ -33,8 +34,7 @@ function titleSlide(pres) {
     { text: PROJECT.encadrement },
   ], { x: W - 7, y: 4.5, w: 5, h: 0.7, fontSize: 14, align: "right" });
   center(PROJECT.annee, 6.6, 0.35, { fontSize: 13, color: COLORS.muted });
-
-  slide.addNotes("Présenter l'équipe, l'université et le sujet : une plateforme de gestion des évaluations construite en microservices.");
+  slide.addNotes(NOTES[pres.slides.length]);
 }
 
 function planSlide(pres) {
@@ -42,7 +42,6 @@ function planSlide(pres) {
     part: "Plan",
     title: "Plan",
     speaker: OUVERTURE.speaker,
-    notes: "Annoncer le plan. Chaque membre présente la partie qu'il a réalisée.",
   });
   table(slide, [
     ["", "Partie", "Présentateur"],
@@ -56,7 +55,6 @@ function teamSlide(pres) {
     part: "Plan",
     title: "Répartition du travail",
     speaker: OUVERTURE.speaker,
-    notes: "Présenter rapidement chaque membre et ce qu'il a réalisé.",
   });
   const keys = ["wade", "mbacke", "fallou", "bara", "aidara"];
   table(slide, [

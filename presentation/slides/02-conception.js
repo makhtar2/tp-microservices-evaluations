@@ -12,11 +12,6 @@ function contextsSlide(pres) {
     part: PART,
     title: "Les Bounded Contexts",
     speaker: SPEAKER,
-    notes:
-      "L'analyse DDD a découpé le domaine en six sous-domaines. Quatre sont au cœur du métier, la gestion des " +
-      "utilisateurs est un support et la notification est générique. Chaque Bounded Context devient un microservice " +
-      "qui possède ses propres données : aucun modèle n'est partagé, les contextes n'échangent que des identifiants " +
-      "et des événements.",
   });
   const contextes = [
     ["User", "Support", "user-service", "User, Role", "Authentification, comptes et rôles"],
@@ -47,11 +42,6 @@ function contextMapSlide(pres) {
     part: PART,
     title: "Context Map",
     speaker: SPEAKER,
-    notes:
-      "Trois types de relations. En haut, tous les contextes se conforment au jeton JWT émis par user-service " +
-      "(Conformist) : pas d'appel synchrone à chaque requête. Assessment est client de Question via gRPC " +
-      "(Customer/Supplier). Tout le reste passe par des événements publiés (Published Language), ce qui découple " +
-      "les services : l'émetteur ne connaît pas ses consommateurs.",
   });
   const bw = 2.05;
   const bh = 0.85;
@@ -99,11 +89,6 @@ function questionSlide(pres) {
     part: PART,
     title: "question-service",
     speaker: SPEAKER,
-    notes:
-      "question-service gère la banque : quatre types de questions, filtres par matière, difficulté et thème, " +
-      "archivage sans suppression en cascade. Pour générer une évaluation automatiquement, assessment-service appelle " +
-      "SelectQuestions en gRPC : c'est le seul appel synchrone entre services, parce que l'enseignant attend la réponse. " +
-      "Le contrat .proto est partagé dans docs/protos.",
   });
   card(pres, slide, {
     x: MARGIN, y: 1.6, w: 4.6, h: 4.95, title: "Banque de questions", accent: ACCENT, fontSize: 13.5,

@@ -6,10 +6,10 @@ Développement d'Applications Réparties.
 
 - **Fichier à projeter** : [`Soutenance-Plateforme-Evaluations.pptx`](Soutenance-Plateforme-Evaluations.pptx)
   (34 slides, format 16:9, s'ouvre dans PowerPoint ou Google Slides)
-- **Durée** : environ 27 minutes, démonstration comprise, puis questions
+- **Durée** : environ 27 minutes, dont 10 de démonstration, puis questions
 - **Encadrement** : Madame Ngom
 - **Notes de l'orateur** : chaque slide contient, dans la zone de notes
-  PowerPoint, ce qu'il faut dire. Ce README reprend ces notes et les
+  PowerPoint, le texte à dire, identique aux fiches des présentateurs. Ce README reprend ces notes et les
   complète.
 
 Un seul support pour toute l'équipe : chaque membre présente la partie qu'il a
@@ -33,24 +33,22 @@ L'ancien modèle du support est conservé dans
 ## Répartition
 
 La répartition suit le travail réel de chacun, tel qu'il apparaît dans
-`CONTRIBUTING.md` et dans l'historique Git. Le temps de parole est
-équilibré : 5 à 6 minutes par membre.
+`CONTRIBUTING.md` et dans l'historique Git. 
 
 | Partie | Présentateur | Slides | Durée | Sujets |
 |---|---|---|---|---|
-| Ouverture | El Hadji Fallou Bousso | 1 à 3 | 1 min | titre, déroulé, équipe |
-| 1. Contexte & besoins | Makhtar Wade | 4 à 7 | 3 min | problème, acteurs, fonctionnalités, règles métier |
-| 2. Conception DDD & domaine Questions | Makhtar Wade | 8 à 11 | 3 min | Bounded Contexts, Context Map, question-service et gRPC |
-| 3. Architecture distribuée | El Hadji Fallou Bousso | 12 à 17 | 5 min | vue d'ensemble, REST/gRPC/AMQP, API Gateway et JWT, bus RabbitMQ, cycles de vie |
-| 4. CQRS & Event Sourcing | Mouhamed Mbacke | 18 à 21 | 4 min | séparation écriture/lecture, Event Store, reconstruction, Read Model |
-| 5. Saga, fiabilité & tests | Mame Bara Samb | 22 à 27 | 5 min | Saga chorégraphiée, compensation, dead-letters, sécurité, resoumission, frontend, tests |
-| 6. Déploiement & démonstration | Pape Makhtar Aidara | 28 à 31 | 4 min | Docker, documentation, démonstration |
-| Conclusion : principes | Mouhamed Mbacke | 32 | 1 min | principes des systèmes distribués démontrés |
-| Conclusion : bilan | Pape Makhtar Aidara | 33 | 1 min | bilan chiffré, enseignements, perspectives |
+| Ouverture | El Hadji Fallou Bousso | 1 à 3 | 1 min 30 | titre, déroulé, équipe |
+| 1. Contexte & besoins | Makhtar Wade | 4 à 7 | 1 min 45 | problème, acteurs, fonctionnalités, règles métier |
+| 2. Conception DDD & domaine Questions | Makhtar Wade | 8 à 11 | 1 min 45 | Bounded Contexts, Context Map, question-service et gRPC |
+| 3. Architecture distribuée | El Hadji Fallou Bousso | 12 à 17 | 4 min | vue d'ensemble, REST/gRPC/AMQP, API Gateway et JWT, bus RabbitMQ, cycles de vie |
+| 4. CQRS & Event Sourcing | Mouhamed Mbacke | 18 à 21 | 2 min | séparation écriture/lecture, Event Store, reconstruction, Read Model |
+| 5. Saga, fiabilité & tests | Mame Bara Samb | 22 à 27 | 3 min | Saga chorégraphiée, compensation, dead-letters, sécurité, resoumission, frontend, tests |
+| 6. Déploiement & démonstration | Pape Makhtar Aidara | 28 à 31 | 11 min 30 | Docker, documentation, démonstration |
+| Conclusion : principes | Mouhamed Mbacke | 32 | 30 s | principes des systèmes distribués démontrés |
+| Conclusion : bilan | Pape Makhtar Aidara | 33 | 30 s | bilan chiffré, enseignements, perspectives |
 | Questions | toute l'équipe | 34 | — | chacun répond sur sa partie |
 
-Temps de parole : Makhtar Wade 6 min, El Hadji Fallou Bousso 6 min,
-Mouhamed Mbacke 5 min, Mame Bara Samb 5 min, Pape Makhtar Aidara 5 min.
+Temps de lecture estimés, hors démonstration : à confirmer au chronomètre.
 
 ### Ce que chacun a réalisé
 
